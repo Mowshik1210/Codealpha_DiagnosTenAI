@@ -9,8 +9,6 @@ env/
 
 .ipynb_checkpoints/
 
-models/*.pkl
-
 .env
 
 .DS_Store
