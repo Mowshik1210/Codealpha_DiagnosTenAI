@@ -389,7 +389,10 @@ def html_to_pdf(html_string: str) -> bytes | None:
 
 @app.route("/")
 def home():
-    return "DiagnosTenAI Running Successfully"
+    return render_template(
+        "index.html",
+        diseases=DISEASES
+    )
 
 @app.route("/disease/<disease_key>")
 def disease_page(disease_key):
