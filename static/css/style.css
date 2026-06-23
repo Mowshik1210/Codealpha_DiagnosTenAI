@@ -1209,3 +1209,48 @@ section { padding:5rem 0; }
   .hero-badge-dot   { animation:none; }
   .creator-pulse    { animation:none; }
 }
+/* ═══════════════════════════════════════════════════════════════
+   14. for mobile display
+═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  .nav-container {
+    padding: 0 10px;
+    height: 60px;
+  }
+
+  .brand-name {
+    font-size: 0.9rem;
+  }
+
+  .creator-btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.7rem;
+  }
+
+  .theme-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+}
+@media (max-width: 768px) {
+
+  .hero-section,
+  .hero,
+  #home {
+    padding-top: 20px;
+  }
+
+}
+body {
+    padding-top: 68px;
+}
