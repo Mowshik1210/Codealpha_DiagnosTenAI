@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<!--
+  DiagnosTenAI — Multi Disease Prediction System
+  File: templates/index.html
+  Author: Mowshik G
+  GitHub: https://github.com/Mowshik1210
+  Description: Main landing page — hero, stats, disease cards, how-it-works, footer.
+  Flask template variables consumed: diseases (dict from app.py DISEASES)
+-->
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DiagnosTenAI — AI-powered multi-disease prediction system using Random Forest Classifier for 10 critical medical conditions." />
+  <link rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='images/logo.png') }}">
+      
+  <title>DiagnosTenAI | Multi-Disease Prediction System</title>
+
+  <!-- ── Bootstrap 5 ── -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <link rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='images/logo.png') }}">
+
+  <!-- ── Font Awesome 6 ── -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+
+  <!-- ── Google Fonts: Plus Jakarta Sans (display) + Inter (body) ── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- ── Custom CSS (generated next) ── -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAGE LOADER — shown on first paint, hidden by JS
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="page-loader" id="pageLoader">
+    <div class="loader-inner">
+      <!-- Animated ECG pulse inside loader -->
+      <svg class="loader-ecg" viewBox="0 0 240 60" xmlns="http://www.w3.org/2000/svg">
+        <polyline class="loader-ecg-line" points="
+          0,30 30,30 45,30 55,5 65,55 75,30 95,30
+          125,30 140,30 150,5 160,55 170,30 190,30 240,30
+        " />
+      </svg>
+      <p class="loader-label">DiagnosTen<span class="accent-text">AI</span></p>
+      <p class="loader-sub">Initialising diagnostic engine…</p>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NAVIGATION BAR
+  ═══════════════════════════════════════════════════════════════ -->
+  <nav class="site-nav" id="siteNav">
+    <div class="nav-container">
+
+      <!-- Brand logo -->
+      <a href="/" class="nav-brand" aria-label="DiagnosTenAI Home">
+        <div class="brand-icon">
+            <img src="{{ url_for('static', filename='images/logo.png') }}"
+                 alt="DiagnosTenAI Logo"
+                 class="site-logo">
+        </div>
+        <span class="brand-name">DiagnosTen<span class="brand-accent">AI</span></span>
+      </a>
+
+      <!-- Centre nav links (desktop) -->
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#home" class="nav-link-item active">Home</a></li>
+        <li><a href="#diseases" class="nav-link-item">Diseases</a></li>
+        <li><a href="#stats" class="nav-link-item">Statistics</a></li>
+        <li><a href="#how-it-works" class="nav-link-item">How It Works</a></li>
+      </ul>
+
+      <!-- Right controls -->
+      <div class="nav-controls">
+
+        <!-- Dark / Light mode toggle -->
+        <button class="theme-btn" id="themeToggle" title="Toggle dark / light mode" aria-label="Toggle theme">
+          <i class="fa-moon fa-solid" id="themeIcon"></i>
+        </button>
+
+        <!-- Creator badge (glowing button + dropdown) -->
+        <div class="creator-wrapper" id="creatorWrapper">
+          <button class="creator-btn" id="creatorBtn" aria-expanded="false" aria-haspopup="true">
+            <span class="creator-pulse"></span>
+            <i class="fa-solid fa-code-branch me-1"></i>
+            Creator
+            <i class="fa-solid fa-chevron-down creator-chevron"></i>
+          </button>
+
+          <!-- Dropdown card -->
+          <div class="creator-dropdown" id="creatorDropdown" role="menu">
+            <!-- Avatar + name -->
+            <div class="cd-header">
+              <div class="cd-avatar">
+                <i class="fa-solid fa-user-astronaut"></i>
+              </div>
+              <div class="cd-info">
+                <p class="cd-name">Mowshik G</p>
+                <p class="cd-role">CSE(AI & ML) at KPRIET</p>
+              </div>
+            </div>
+
+            <!-- Social links -->
+            <div class="cd-links">
+              <a href="mailto:dharshanmowshik@gmail.com"
+                 class="cd-link cd-email"
+                 role="menuitem"
+                 title="Send email">
+                <i class="fa-solid fa-envelope"></i>
+                <span>dharshanmowshik@gmail.com</span>
+              </a>
+              <a href="https://github.com/Mowshik1210"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="cd-link cd-github"
+                 role="menuitem"
+                 title="GitHub profile">
+                <i class="fa-brands fa-github"></i>
+                <span>github.com/Mowshik1210</span>
+              </a>
+              <a href="https://linkedin.com/in/mowshik-g/"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="cd-link cd-linkedin"
+                 role="menuitem"
+                 title="LinkedIn profile">
+                <i class="fa-brands fa-linkedin-in"></i>
+                <span>linkedin.com/in/mowshik-g/</span>
+              </a>
+            </div>
+
+            <!-- CodeAlpha internship tag -->
+            <div class="cd-footer-tag">
+              <i class="fa-solid fa-briefcase me-1"></i>
+              KPRIET student · Batch 2026-29
+            </div>
+          </div>
+        </div><!-- /creator-wrapper -->
+
+        <!-- Mobile hamburger -->
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+
+      </div><!-- /nav-controls -->
+    </div><!-- /nav-container -->
+  </nav><!-- /site-nav -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HERO SECTION
+       Signature element: animated ECG polyline that pulses
+       continuously across the full viewport width.
+  ═══════════════════════════════════════════════════════════════ -->
+  <section class="hero-section" id="home">
+
+    <!-- Animated dot-grid background -->
+    <div class="hero-grid" aria-hidden="true"></div>
+
+    <!-- Signature ECG animation — full width, clipped at top of cards -->
+    <div class="ecg-band" aria-hidden="true">
+      <svg class="ecg-svg" viewBox="0 0 1440 80" preserveAspectRatio="none"
+           xmlns="http://www.w3.org/2000/svg">
+        <!-- Repeat the PQRST waveform pattern tiling the full width -->
+        <polyline class="ecg-wave" points="
+          0,40   30,40  50,40  62,8   72,72  82,40  110,40
+          140,40 160,40 172,8  182,72 192,40 220,40
+          250,40 270,40 282,8  292,72 302,40 330,40
+          360,40 380,40 392,8  402,72 412,40 440,40
+          470,40 490,40 502,8  512,72 522,40 550,40
+          580,40 600,40 612,8  622,72 632,40 660,40
+          690,40 710,40 722,8  732,72 742,40 770,40
+          800,40 820,40 832,8  842,72 852,40 880,40
+          910,40 930,40 942,8  952,72 962,40 990,40
+          1020,40 1040,40 1052,8  1062,72 1072,40 1100,40
+          1130,40 1150,40 1162,8  1172,72 1182,40 1210,40
+          1240,40 1260,40 1272,8  1282,72 1292,40 1320,40
+          1350,40 1370,40 1382,8  1392,72 1402,40 1440,40
+        " />
+      </svg>
+    </div>
+
+    <div class="container hero-container">
+      <div class="row align-items-center">
+
+        <!-- Left: copy + CTAs + mini-stats -->
+        <div class="col-lg-7 hero-copy">
+
+          <!-- Pill badge -->
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            <i class="fa-solid fa-robot me-2"></i>
+            Random Forest · 200 Estimators · Live Inference
+          </div>
+
+          <!-- Heading -->
+          <h1 class="hero-heading">
+            <span class="hero-h1-line1">DiagnosTen</span><span class="hero-accent">AI</span>
+            <br />
+            <span class="hero-h1-line2">Multi‑Disease</span>
+            <br />
+            <span class="hero-h1-line3">Prediction System</span>
+          </h1>
+
+          <!-- Sub-copy -->
+          <p class="hero-sub">
+            An AI‑powered clinical decision‑support dashboard that predicts
+            <strong>10 critical diseases</strong> in seconds — using scikit‑learn's
+            Random Forest Classifier trained on curated medical datasets.
+            Built for excellence.
+          </p>
+
+          <!-- CTA buttons -->
+          <div class="hero-actions">
+            <a href="#diseases" class="btn-cta-primary">
+              <i class="fa-solid fa-stethoscope me-2"></i>
+              Start Diagnosis
+            </a>
+            <a href="#how-it-works" class="btn-cta-ghost">
+              <i class="fa-solid fa-circle-play me-2"></i>
+              See How It Works
+            </a>
+          </div>
+
+          <!-- Inline mini-stats -->
+          <div class="hero-stats-row">
+            <div class="hsr-item">
+              <span class="hsr-num" data-target="10">0</span>
+              <span class="hsr-lbl">Diseases</span>
+            </div>
+            <div class="hsr-divider" aria-hidden="true"></div>
+            <div class="hsr-item">
+              <span class="hsr-num" data-target="95">0</span>
+              <span class="hsr-lbl">% Avg. Accuracy</span>
+            </div>
+            <div class="hsr-divider" aria-hidden="true"></div>
+            <div class="hsr-item">
+              <span class="hsr-num" data-target="200">0</span>
+              <span class="hsr-lbl">RF Estimators</span>
+            </div>
+            <div class="hsr-divider" aria-hidden="true"></div>
+            <div class="hsr-item">
+              <span class="hsr-num" data-target="10">0</span>
+              <span class="hsr-lbl">Datasets</span>
+            </div>
+          </div>
+
+        </div><!-- /col hero-copy -->
+
+        <!-- Right: floating orbital illustration (desktop only) -->
+        <div class="col-lg-5 d-none d-lg-flex hero-illus-col" aria-hidden="true">
+          <div class="hero-illus">
+
+            <!-- Central pulsing core -->
+            <div class="illus-core">
+              <div class="illus-core-ring ring-1"></div>
+              <div class="illus-core-ring ring-2"></div>
+              <img src="{{ url_for('static', filename='images/logo.png') }}"
+                   alt="DiagnosTenAI"
+                   style="width:120px;">
+              </div>
+
+            <!-- Orbiting disease icons -->
+            <div class="orbit-track orbit-a">
+              <div class="orbit-chip">
+                <i class="fa-solid fa-brain"></i>
+              </div>
+            </div>
+            <div class="orbit-track orbit-b">
+              <div class="orbit-chip">
+                <i class="fa-solid fa-lungs"></i>
+              </div>
+            </div>
+            <div class="orbit-track orbit-c">
+              <div class="orbit-chip">
+                <i class="fa-solid fa-droplet"></i>
+              </div>
+            </div>
+
+            <!-- Floating info cards -->
+            <div class="illus-tag tag-nw">
+              <i class="fa-solid fa-syringe me-1"></i> Diabetes
+            </div>
+            <div class="illus-tag tag-ne">
+              <i class="fa-solid fa-heart me-1"></i> Heart
+            </div>
+            <div class="illus-tag tag-sw">
+              <i class="fa-solid fa-ribbon me-1"></i> Cancer
+            </div>
+            <div class="illus-tag tag-se">
+              <i class="fa-solid fa-bolt me-1"></i> Stroke
+            </div>
+
+          </div>
+        </div><!-- /hero-illus-col -->
+
+      </div><!-- /row -->
+    </div><!-- /container -->
+
+    <!-- Scroll cue -->
+    <a href="#stats" class="hero-scroll-cue" aria-label="Scroll down">
+      <i class="fa-solid fa-angles-down"></i>
+    </a>
+
+  </section><!-- /hero-section -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       STATISTICS SECTION
+  ═══════════════════════════════════════════════════════════════ -->
+  <section class="stats-section" id="stats">
+    <div class="container">
+
+      <div class="section-header">
+        <span class="section-eyebrow">By The Numbers</span>
+        <h2 class="section-title">Platform at a Glance</h2>
+        <p class="section-sub">
+          scikit‑learn's RandomForestClassifier with 200 estimators trained on
+          real clinical datasets — validated with an 80 / 20 train‑test split.
+        </p>
+      </div>
+
+      <div class="row g-4 stats-row">
+
+        <!-- Stat 1 -->
+        <div class="col-lg-3 col-sm-6">
+          <div class="stat-card" style="--sc-accent:#00D4B8;">
+            <div class="sc-icon-wrap">
+              <i class="fa-solid fa-virus-covid"></i>
+            </div>
+            <div class="sc-body">
+              <span class="sc-num counter" data-target="10">0</span>
+              <span class="sc-unit"></span>
+            </div>
+            <p class="sc-label">Diseases Covered</p>
+            <div class="sc-bar-track">
+              <div class="sc-bar" style="--bar-w:100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stat 2 -->
+        <div class="col-lg-3 col-sm-6">
+          <div class="stat-card" style="--sc-accent:#818CF8;">
+            <div class="sc-icon-wrap">
+              <i class="fa-solid fa-microchip"></i>
+            </div>
+            <div class="sc-body">
+              <span class="sc-num counter" data-target="200">0</span>
+              <span class="sc-unit"></span>
+            </div>
+            <p class="sc-label">RF Estimators</p>
+            <div class="sc-bar-track">
+              <div class="sc-bar" style="--bar-w:80%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stat 3 -->
+        <div class="col-lg-3 col-sm-6">
+          <div class="stat-card" style="--sc-accent:#F472B6;">
+            <div class="sc-icon-wrap">
+              <i class="fa-solid fa-database"></i>
+            </div>
+            <div class="sc-body">
+              <span class="sc-num counter" data-target="10">0</span>
+              <span class="sc-unit"></span>
+            </div>
+            <p class="sc-label">Medical Datasets</p>
+            <div class="sc-bar-track">
+              <div class="sc-bar" style="--bar-w:100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stat 4 -->
+        <div class="col-lg-3 col-sm-6">
+          <div class="stat-card" style="--sc-accent:#FBBF24;">
+            <div class="sc-icon-wrap">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div class="sc-body">
+              <span class="sc-num counter" data-target="95">0</span>
+              <span class="sc-unit">%</span>
+            </div>
+            <p class="sc-label">Avg. Accuracy</p>
+            <div class="sc-bar-track">
+              <div class="sc-bar" style="--bar-w:95%;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /stats-row -->
+    </div>
+  </section><!-- /stats-section -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       DISEASE CARDS SECTION
+       Jinja2 loop over `diseases` dict passed from app.py home().
+       Metadata (icon, colour, tag, desc, accuracy) defined in
+       disease_meta mapping below — keeps app.py clean.
+  ═══════════════════════════════════════════════════════════════ -->
+  <section class="diseases-section" id="diseases">
+    <div class="container">
+
+      <div class="section-header">
+        <span class="section-eyebrow">AI Diagnostics</span>
+        <h2 class="section-title">Select a Disease to Predict</h2>
+        <p class="section-sub">
+          Choose from 10 critical medical conditions. Enter clinical parameters
+          and receive an AI prediction with confidence score and downloadable report.
+        </p>
+      </div>
+
+      <!-- Live search / filter -->
+      <div class="disease-search">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input
+          type="text"
+          id="diseaseSearch"
+          class="disease-search-input"
+          placeholder="Search diseases, e.g. heart, diabetes…"
+          autocomplete="off"
+          aria-label="Search diseases"
+        />
+        <button class="search-clear" id="searchClear" aria-label="Clear search" hidden>
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- ─── Disease metadata dictionary ─── 
+           Defined here so app.py stays unchanged.
+           Keys match DISEASES dict in app.py exactly.
+      -->
+      {% set dm = {
+        'heart': {
+          'icon':     'fa-heart-pulse',
+          'color':    '#FF6B9D',
+          'bg':       'linear-gradient(135deg,rgba(255,107,157,.12),rgba(255,107,157,.03))',
+          'tag':      'Cardiovascular',
+          'desc':     'Predict coronary artery disease risk from ECG, cholesterol, blood pressure, and cardiac biomarkers.',
+          'accuracy': '96%'
+        },
+        'diabetes': {
+          'icon':     'fa-syringe',
+          'color':    '#00D4B8',
+          'bg':       'linear-gradient(135deg,rgba(0,212,184,.12),rgba(0,212,184,.03))',
+          'tag':      'Metabolic',
+          'desc':     'Detect Type 2 Diabetes risk using plasma glucose, insulin resistance, BMI, and pedigree function.',
+          'accuracy': '94%'
+        },
+        'breast_cancer': {
+          'icon':     'fa-ribbon',
+          'color':    '#F472B6',
+          'bg':       'linear-gradient(135deg,rgba(244,114,182,.12),rgba(244,114,182,.03))',
+          'tag':      'Oncology',
+          'desc':     'Classify malignant vs benign breast tumors from fine needle aspiration cell nucleus features.',
+          'accuracy': '97%'
+        },
+        'parkinsons': {
+          'icon':     'fa-brain',
+          'color':    '#A78BFA',
+          'bg':       'linear-gradient(135deg,rgba(167,139,250,.12),rgba(167,139,250,.03))',
+          'tag':      'Neurology',
+          'desc':     'Identify Parkinson\'s disease signatures from biomedical voice measurements and jitter analysis.',
+          'accuracy': '95%'
+        },
+        'kidney': {
+          'icon':     'fa-droplet',
+          'color':    '#38BDF8',
+          'bg':       'linear-gradient(135deg,rgba(56,189,248,.12),rgba(56,189,248,.03))',
+          'tag':      'Nephrology',
+          'desc':     'Predict chronic kidney disease from blood urea, serum creatinine, haemoglobin, and urinalysis.',
+          'accuracy': '98%'
+        },
+        'liver': {
+          'icon':     'fa-shield-halved',
+          'color':    '#FB923C',
+          'bg':       'linear-gradient(135deg,rgba(251,146,60,.12),rgba(251,146,60,.03))',
+          'tag':      'Hepatology',
+          'desc':     'Assess liver disease probability from bilirubin, alkaline phosphotase, and albumin blood results.',
+          'accuracy': '93%'
+        },
+        'lung': {
+          'icon':     'fa-lungs',
+          'color':    '#34D399',
+          'bg':       'linear-gradient(135deg,rgba(52,211,153,.12),rgba(52,211,153,.03))',
+          'tag':      'Pulmonology',
+          'desc':     'Evaluate lung cancer probability from smoking history, chronic disease, and symptom profiles.',
+          'accuracy': '92%'
+        },
+        'stroke': {
+          'icon':     'fa-bolt',
+          'color':    '#FBBF24',
+          'bg':       'linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.03))',
+          'tag':      'Neurovascular',
+          'desc':     'Predict ischaemic stroke risk using hypertension status, atrial fibrillation, glucose, and BMI.',
+          'accuracy': '95%'
+        },
+        'thyroid': {
+          'icon':     'fa-circle-nodes',
+          'color':    '#818CF8',
+          'bg':       'linear-gradient(135deg,rgba(129,140,248,.12),rgba(129,140,248,.03))',
+          'tag':      'Endocrinology',
+          'desc':     'Detect thyroid disease recurrence from clinical and histopathological examination features.',
+          'accuracy': '96%'
+        },
+        'alzheimers': {
+          'icon':     'fa-network-wired',
+          'color':    '#F87171',
+          'bg':       'linear-gradient(135deg,rgba(248,113,113,.12),rgba(248,113,113,.03))',
+          'tag':      'Geriatric Neurology',
+          'desc':     'Assess Alzheimer\'s disease risk from cognitive assessments, MMSE score, and MRI measurements.',
+          'accuracy': '91%'
+        }
+      } %}
+
+      <!-- Cards grid -->
+      <div class="row g-4" id="diseaseGrid">
+        {% for key, info in diseases.items() %}
+          {% set meta = dm.get(key, {}) %}
+          <div class="col-xl-4 col-lg-4 col-md-6 dc-col" data-name="{{ info.name | lower }}">
+            <div class="disease-card"
+                 style="
+                   --dc-color: {{ meta.color }};
+                   background: {{ meta.bg }};
+                 ">
+
+              <!-- Top row: icon + accuracy pill -->
+              <div class="dc-top-row">
+                <div class="dc-icon" style="--dc-color:{{ meta.color }};">
+                  <i class="fa-solid {{ meta.icon }}"></i>
+                </div>
+                <span class="dc-accuracy" style="--dc-color:{{ meta.color }};">
+                  <i class="fa-solid fa-bullseye me-1"></i>{{ meta.accuracy }}
+                </span>
+              </div>
+
+              <!-- Category tag -->
+              <span class="dc-tag" style="color:{{ meta.color }};">
+                {{ meta.tag }}
+              </span>
+
+              <!-- Disease name -->
+              <h3 class="dc-title">{{ info.name }}</h3>
+
+              <!-- Description -->
+              <p class="dc-desc">{{ meta.desc }}</p>
+
+              <!-- CTA link -->
+              <a href="{{ url_for('disease_page', disease_key=key) }}"
+                 class="dc-cta"
+                 style="--dc-color:{{ meta.color }};"
+                 aria-label="Run prediction for {{ info.name }}">
+                <span>Run Prediction</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </a>
+
+              <!-- Decorative bottom glow -->
+              <div class="dc-glow" style="--dc-color:{{ meta.color }};" aria-hidden="true"></div>
+
+            </div><!-- /disease-card -->
+          </div><!-- /col -->
+        {% endfor %}
+      </div><!-- /#diseaseGrid -->
+
+      <!-- Empty state (shown by JS when search has no matches) -->
+      <div class="search-empty d-none" id="searchEmpty">
+        <i class="fa-solid fa-magnifying-glass-minus"></i>
+        <p>No diseases match "<span id="searchEmptyTerm"></span>"</p>
+        <button class="btn-clear-search" id="clearSearch">Clear search</button>
+      </div>
+
+    </div>
+  </section><!-- /diseases-section -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HOW IT WORKS SECTION
+       Uses a real 3-step sequence so numbered labels are meaningful.
+  ═══════════════════════════════════════════════════════════════ -->
+  <section class="how-section" id="how-it-works">
+    <div class="container">
+
+      <div class="section-header">
+        <span class="section-eyebrow">Workflow</span>
+        <h2 class="section-title">How DiagnosTenAI Works</h2>
+        <p class="section-sub">
+          From disease selection to downloadable PDF report — three steps,
+          seconds to complete.
+        </p>
+      </div>
+
+      <div class="row g-4 how-row">
+
+        <!-- Step 1 -->
+        <div class="col-lg-4">
+          <div class="how-card how-card--1">
+            <div class="how-step-label">Step 01</div>
+            <div class="how-icon-wrap">
+              <i class="fa-solid fa-list-check"></i>
+            </div>
+            <h4 class="how-title">Select Disease</h4>
+            <p class="how-desc">
+              Browse the 10 disease categories on the dashboard and tap
+              <em>Run Prediction</em> on the condition you want to assess.
+            </p>
+            <div class="how-connector" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="col-lg-4">
+          <div class="how-card how-card--2">
+            <div class="how-step-label">Step 02</div>
+            <div class="how-icon-wrap">
+              <i class="fa-solid fa-keyboard"></i>
+            </div>
+            <h4 class="how-title">Enter Clinical Data</h4>
+            <p class="how-desc">
+              Fill in the patient parameters — lab values, vitals, age, BMI —
+              shown dynamically from the trained model's feature columns.
+            </p>
+            <div class="how-connector" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="col-lg-4">
+          <div class="how-card how-card--3">
+            <div class="how-step-label">Step 03</div>
+            <div class="how-icon-wrap">
+              <i class="fa-solid fa-file-medical"></i>
+            </div>
+            <h4 class="how-title">Get AI Report</h4>
+            <p class="how-desc">
+              Receive instant results: prediction outcome, confidence score,
+              risk level, clinical recommendations, and a one‑click PDF report.
+            </p>
+          </div>
+        </div>
+
+      </div><!-- /how-row -->
+
+      <!-- Tech-stack pill badges -->
+      <div class="tech-stack-row">
+        <p class="ts-label">Built with</p>
+        <div class="ts-badges">
+          <span class="ts-badge"><i class="fa-brands fa-python me-1"></i>Python 3</span>
+          <span class="ts-badge"><i class="fa-solid fa-flask me-1"></i>Flask 3.1</span>
+          <span class="ts-badge"><i class="fa-solid fa-tree me-1"></i>Scikit‑Learn 1.6</span>
+          <span class="ts-badge"><i class="fa-solid fa-robot me-1"></i>Random Forest</span>
+          <span class="ts-badge"><i class="fa-solid fa-cube me-1"></i>Joblib</span>
+          <span class="ts-badge"><i class="fa-brands fa-bootstrap me-1"></i>Bootstrap 5</span>
+          <span class="ts-badge"><i class="fa-solid fa-file-pdf me-1"></i>PDF Reports</span>
+        </div>
+      </div>
+
+    </div>
+  </section><!-- /how-section -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════════════════════════ -->
+  <footer class="site-footer" id="footer">
+    <div class="container">
+      <div class="row g-5">
+
+        <!-- Brand column -->
+        <div class="col-lg-4">
+          <a href="/" class="footer-brand" aria-label="DiagnosTenAI Home">
+        <div class="brand-icon">
+            <img src="{{ url_for('static', filename='images/logo.png') }}"
+                 alt="DiagnosTenAI Logo"
+                 class="site-logo">
+        </div>
+            <span class="brand-name">DiagnosTen<span class="brand-accent">AI</span></span>
+          </a>
+          <p class="footer-desc">
+            AI‑powered multi‑disease prediction system built with Python,
+            Flask, and scikit‑learn. For educational &amp; portfolio use only.
+          </p>
+          <div class="footer-socials">
+            <a href="https://github.com/Mowshik1210"
+               target="_blank" rel="noopener noreferrer"
+               class="fsoc fsoc-github" aria-label="GitHub">
+              <i class="fa-brands fa-github"></i>
+            </a>
+            <a href="https://linkedin.com/in/mowshik-g/"
+               target="_blank" rel="noopener noreferrer"
+               class="fsoc fsoc-linkedin" aria-label="LinkedIn">
+              <i class="fa-brands fa-linkedin-in"></i>
+            </a>
+            <a href="mailto:dharshanmowshik@gmail.com"
+               class="fsoc fsoc-email" aria-label="Email">
+              <i class="fa-solid fa-envelope"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick links -->
+        <div class="col-lg-2 col-sm-6">
+          <h6 class="footer-heading">Navigation</h6>
+          <ul class="footer-links">
+            <li><a href="#home"><i class="fa-solid fa-chevron-right"></i>Home</a></li>
+            <li><a href="#diseases"><i class="fa-solid fa-chevron-right"></i>Diseases</a></li>
+            <li><a href="#stats"><i class="fa-solid fa-chevron-right"></i>Statistics</a></li>
+            <li><a href="#how-it-works"><i class="fa-solid fa-chevron-right"></i>How It Works</a></li>
+          </ul>
+        </div>
+
+        <!-- Disease links (uses url_for — Flask aware) -->
+        <div class="col-lg-3 col-sm-6">
+          <h6 class="footer-heading">Supported Diseases</h6>
+          <ul class="footer-links footer-links--two-col">
+            <li><a href="{{ url_for('disease_page', disease_key='heart') }}">Heart Disease</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='diabetes') }}">Diabetes</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='breast_cancer') }}">Breast Cancer</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='parkinsons') }}">Parkinson's</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='kidney') }}">Kidney Disease</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='liver') }}">Liver Disease</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='lung') }}">Lung Cancer</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='stroke') }}">Stroke</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='thyroid') }}">Thyroid</a></li>
+            <li><a href="{{ url_for('disease_page', disease_key='alzheimers') }}">Alzheimer's</a></li>
+          </ul>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="col-lg-3">
+          <h6 class="footer-heading">
+            <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>
+            Disclaimer
+          </h6>
+          <div class="footer-disclaimer">
+            <p>
+              This system is a <strong>demonstration project</strong> for
+              educational purposes only.
+            </p>
+            <p>
+              It is <strong>NOT</strong> a substitute for professional medical
+              advice, diagnosis, or treatment. Always consult a qualified
+              healthcare provider.
+            </p>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+
+      <!-- Bottom bar -->
+      <div class="footer-bottom">
+        <p>
+          &copy; 2026 <strong>DiagnosTenAI</strong> — Built by
+          <a href="https://github.com/Mowshik1210" target="_blank" rel="noopener noreferrer">
+            Mowshik G
+          </a>
+          &nbsp;·&nbsp; KPRIET · Batch 2026
+        </p>
+        <p class="footer-stack-text">
+          Flask · Scikit‑Learn · Random Forest · Bootstrap 5
+        </p>
+      </div>
+
+    </div>
+  </footer><!-- /site-footer -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SCRIPTS
+  ═══════════════════════════════════════════════════════════════ -->
+  <!-- Bootstrap 5 JS bundle (includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Custom JS (File 3 in generation order) -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+</html>

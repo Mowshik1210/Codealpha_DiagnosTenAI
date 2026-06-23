@@ -1,0 +1,20 @@
+# DiagnosTenAI — Python dependencies
+# Install all with:  pip install -r requirements.txt
+# No system packages needed — works on Windows, macOS, Linux.
+
+# ── Core framework ───────────────────────────────────────────
+Flask==3.1.0
+
+# ── Machine learning ─────────────────────────────────────────
+pandas==2.2.3
+numpy==2.2.6
+scikit-learn==1.6.1
+joblib==1.4.2
+
+# ── Data visualisation (train_model.py) ──────────────────────
+matplotlib==3.10.3
+seaborn==0.13.2
+
+# ── PDF report generation (pure Python — no system deps) ─────
+# Works on Windows without GTK / Pango / Cairo.
+xhtml2pdf==0.2.17

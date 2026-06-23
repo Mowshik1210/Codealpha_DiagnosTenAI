@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<!--
+  DiagnosTenAI — Multi Disease Prediction System
+  File : templates/result.html
+  Flask variables consumed:
+    disease    — str   disease name  e.g. "Heart Disease"
+    prediction — int   0 = negative · 1 = positive (LabelEncoder output)
+    confidence — float confidence %  e.g. 87.5
+  Notes:
+    • Risk level, colour scheme, and recommendations are derived
+      purely from prediction + confidence in Jinja2 — no extra
+      app.py logic needed.
+    • PDF download passes data to /download_report via hidden form
+      (wired up in final app.py, File 8).
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Result: {{ disease }} | DiagnosTenAI</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+
+  {# ─── Derive all display values from the two Flask variables ─── #}
+
+  {# Is it a positive prediction? 1 = positive/disease, 0 = negative/clear #}
+  {% set is_positive = (prediction | int) != 0 %}
+
+  {# Confidence as integer for display and logic #}
+  {% set conf = confidence | float %}
+
+  {#
+    Risk level matrix:
+      Positive + conf ≥ 85  → HIGH
+      Positive + conf ≥ 65  → MODERATE
+      Positive + conf < 65  → LOW-MODERATE
+      Negative + conf ≥ 85  → VERY LOW
+      Negative + conf ≥ 65  → LOW
+      Negative + conf < 65  → LOW-MODERATE
+  #}
+  {% if is_positive %}
+    {% if conf >= 85 %}
+      {% set risk_level = "High"          %}
+      {% set risk_icon  = "fa-circle-exclamation" %}
+      {% set risk_color = "#F87171"       %}
+    {% elif conf >= 65 %}
+      {% set risk_level = "Moderate"      %}
+      {% set risk_icon  = "fa-triangle-exclamation" %}
+      {% set risk_color = "#FBBF24"       %}
+    {% else %}
+      {% set risk_level = "Low-Moderate"  %}
+      {% set risk_icon  = "fa-circle-minus" %}
+      {% set risk_color = "#FB923C"       %}
+    {% endif %}
+    {% set result_label  = "Positive"     %}
+    {% set result_color  = "#F87171"      %}
+    {% set result_bg     = "rgba(248,113,113,.10)" %}
+    {% set result_border = "rgba(248,113,113,.30)" %}
+    {% set result_icon   = "fa-virus"     %}
+    {% set verdict_text  = disease + " Detected" %}
+    {% set verdict_sub   = "The model predicts a positive outcome. Please consult a healthcare professional immediately for further evaluation." %}
+  {% else %}
+    {% if conf >= 85 %}
+      {% set risk_level = "Very Low"      %}
+      {% set risk_icon  = "fa-shield-check" %}
+      {% set risk_color = "#34D399"       %}
+    {% elif conf >= 65 %}
+      {% set risk_level = "Low"           %}
+      {% set risk_icon  = "fa-circle-check" %}
+      {% set risk_color = "#34D399"       %}
+    {% else %}
+      {% set risk_level = "Low-Moderate"  %}
+      {% set risk_icon  = "fa-circle-minus" %}
+      {% set risk_color = "#FBBF24"       %}
+    {% endif %}
+    {% set result_label  = "Negative"     %}
+    {% set result_color  = "#34D399"      %}
+    {% set result_bg     = "rgba(52,211,153,.10)" %}
+    {% set result_border = "rgba(52,211,153,.30)" %}
+    {% set result_icon   = "fa-shield-heart" %}
+    {% set verdict_text  = "No " + disease + " Detected" %}
+    {% set verdict_sub   = "The model predicts a negative outcome. Continue healthy habits and schedule regular check-ups with your doctor." %}
+  {% endif %}
+
+  {#
+    Disease-specific recommendations
+    Keyed by disease name string (matches DISEASES dict values in app.py).
+    Each entry: { positive: [...], negative: [...] }
+  #}
+  {% set recs = {
+    "Heart Disease": {
+      "positive": [
+        "Consult a cardiologist for a comprehensive cardiac evaluation immediately.",
+        "Consider an ECG, echocardiogram, and coronary angiography as advised.",
+        "Adopt a heart-healthy diet — low sodium, low saturated fat, high fibre.",
+        "Begin a supervised cardiac rehabilitation exercise programme.",
+        "Monitor blood pressure and cholesterol levels regularly.",
+        "Avoid smoking, alcohol, and high-stress environments.",
+        "Take prescribed medications (statins, beta-blockers) consistently."
+      ],
+      "negative": [
+        "Maintain a balanced diet rich in fruits, vegetables, and whole grains.",
+        "Exercise at least 150 minutes of moderate activity per week.",
+        "Schedule an annual cardiovascular check-up.",
+        "Monitor blood pressure and cholesterol every 6 months.",
+        "Avoid smoking and limit alcohol consumption.",
+        "Manage stress through meditation, yoga, or other relaxation techniques."
+      ]
+    },
+    "Diabetes": {
+      "positive": [
+        "Consult an endocrinologist for a comprehensive diabetes evaluation.",
+        "Monitor fasting blood glucose and HbA1c levels regularly.",
+        "Adopt a low-glycaemic, high-fibre diet; reduce refined carbohydrates.",
+        "Begin a structured physical activity programme to improve insulin sensitivity.",
+        "Take prescribed diabetes medications or insulin as directed.",
+        "Monitor feet daily for sores or infections (neuropathy risk).",
+        "Schedule annual eye and kidney function examinations."
+      ],
+      "negative": [
+        "Maintain a healthy weight — BMI between 18.5 and 24.9.",
+        "Limit sugar and refined carbohydrates in your diet.",
+        "Exercise regularly to maintain insulin sensitivity.",
+        "Get a fasting blood glucose test annually.",
+        "If you have a family history of diabetes, discuss screening with your doctor.",
+        "Avoid processed foods and sweetened beverages."
+      ]
+    },
+    "Breast Cancer": {
+      "positive": [
+        "Seek immediate consultation with an oncologist for staging and biopsy confirmation.",
+        "Discuss treatment options: surgery, radiation, chemotherapy, hormone therapy.",
+        "Get a second opinion from a cancer centre if possible.",
+        "Join a breast cancer support group for emotional and practical guidance.",
+        "Genetic counselling (BRCA1/BRCA2 testing) is recommended.",
+        "Maintain a nutritious diet and keep active during treatment.",
+        "Follow up with mammography and imaging as recommended."
+      ],
+      "negative": [
+        "Perform a monthly breast self-examination to detect any changes.",
+        "Schedule mammography as per your age and risk profile guidelines.",
+        "Maintain a healthy weight and limit alcohol consumption.",
+        "Breastfeed if possible — it reduces breast cancer risk.",
+        "Discuss hormone replacement therapy risks with your doctor.",
+        "Report any lumps, nipple discharge, or skin changes promptly."
+      ]
+    },
+    "Parkinson's Disease": {
+      "positive": [
+        "Consult a neurologist specialising in movement disorders immediately.",
+        "Begin medications (levodopa/carbidopa) as prescribed — early treatment is key.",
+        "Engage in physical therapy to maintain balance and mobility.",
+        "Consider speech therapy if swallowing or speech difficulties arise.",
+        "Join a Parkinson's support group for coping strategies.",
+        "Make home safety modifications to prevent falls.",
+        "Explore deep brain stimulation (DBS) eligibility with your neurologist."
+      ],
+      "negative": [
+        "Maintain regular aerobic exercise — it supports brain health.",
+        "Follow a Mediterranean diet rich in antioxidants.",
+        "Avoid exposure to pesticides and environmental toxins.",
+        "Monitor for early signs: tremor, rigidity, slow movement.",
+        "Schedule a neurological evaluation if symptoms develop.",
+        "Stay mentally active with puzzles, reading, and social engagement."
+      ]
+    },
+    "Kidney Disease": {
+      "positive": [
+        "Consult a nephrologist for GFR staging and treatment planning.",
+        "Restrict sodium, potassium, and phosphorus in your diet.",
+        "Monitor fluid intake and urine output daily.",
+        "Control blood pressure rigorously (target < 130/80 mmHg).",
+        "Manage diabetes carefully if present — it accelerates kidney damage.",
+        "Avoid NSAIDs and nephrotoxic medications.",
+        "Discuss dialysis or transplant planning with your care team."
+      ],
+      "negative": [
+        "Stay well hydrated — drink 8–10 glasses of water daily.",
+        "Avoid excessive use of pain relievers (NSAIDs).",
+        "Control blood pressure and blood sugar levels.",
+        "Maintain a balanced, low-sodium diet.",
+        "Get annual kidney function tests (creatinine, eGFR).",
+        "Avoid smoking — it worsens kidney blood flow."
+      ]
+    },
+    "Liver Disease": {
+      "positive": [
+        "Consult a hepatologist for liver function tests and imaging.",
+        "Abstain completely from alcohol — it accelerates liver damage.",
+        "Follow a liver-friendly diet: low fat, high fibre, no processed foods.",
+        "Monitor bilirubin, ALT, AST, and albumin levels regularly.",
+        "Get vaccinated against Hepatitis A and B if not already immune.",
+        "Avoid herbal supplements not approved by your doctor.",
+        "Discuss antiviral therapy if hepatitis is the underlying cause."
+      ],
+      "negative": [
+        "Limit alcohol consumption to recommended safe levels.",
+        "Maintain a healthy weight to prevent fatty liver disease.",
+        "Get vaccinated against Hepatitis A and B.",
+        "Avoid sharing needles or personal hygiene items.",
+        "Schedule annual liver function blood tests.",
+        "Eat a balanced diet and exercise regularly."
+      ]
+    },
+    "Lung Cancer": {
+      "positive": [
+        "Seek immediate evaluation by a thoracic oncologist.",
+        "Low-dose CT scan and bronchoscopy will confirm staging.",
+        "Discuss treatment: surgery, chemotherapy, radiation, immunotherapy.",
+        "Stop smoking immediately — it significantly improves treatment outcomes.",
+        "Consider pulmonary rehabilitation to maintain breathing capacity.",
+        "Nutritional support is critical during cancer treatment.",
+        "Explore clinical trials at cancer research centres."
+      ],
+      "negative": [
+        "If you smoke, quit immediately — it is the single most important step.",
+        "Avoid secondhand smoke and radon gas exposure at home.",
+        "Test your home for radon with a DIY kit.",
+        "If you have a long smoking history, ask about annual low-dose CT screening.",
+        "Wear protective masks when exposed to asbestos or chemicals.",
+        "Report persistent cough, blood in sputum, or weight loss promptly."
+      ]
+    },
+    "Stroke Prediction": {
+      "positive": [
+        "Call emergency services immediately if stroke symptoms appear (FAST).",
+        "Strict blood pressure control is essential — target < 130/80 mmHg.",
+        "Start antiplatelet or anticoagulant therapy as prescribed.",
+        "Begin a stroke rehabilitation programme (physiotherapy, speech therapy).",
+        "Control atrial fibrillation with medication or procedures.",
+        "Manage diabetes, cholesterol, and weight rigorously.",
+        "Avoid smoking and limit alcohol consumption."
+      ],
+      "negative": [
+        "Control blood pressure — hypertension is the top stroke risk factor.",
+        "Manage cholesterol levels through diet and medication if needed.",
+        "Exercise regularly and maintain a healthy BMI.",
+        "Follow the FAST acronym to recognise stroke symptoms early.",
+        "If you have atrial fibrillation, ensure it is being treated.",
+        "Limit alcohol and quit smoking."
+      ]
+    },
+    "Thyroid Disease": {
+      "positive": [
+        "Consult an endocrinologist for TSH, T3, T4 blood tests and ultrasound.",
+        "Take thyroid hormone replacement (levothyroxine) consistently if hypothyroid.",
+        "If hyperthyroid, discuss antithyroid medications, radioactive iodine, or surgery.",
+        "Monitor thyroid levels every 6–12 months.",
+        "Eat a balanced diet with adequate iodine but avoid excess iodine supplements.",
+        "Watch for symptoms: fatigue, weight changes, mood swings.",
+        "Regular neck self-examination to detect any swelling or nodules."
+      ],
+      "negative": [
+        "Ensure adequate iodine intake through diet (iodised salt, seafood).",
+        "Have TSH levels tested if you experience fatigue, weight change, or mood changes.",
+        "Avoid excess iodine supplements unless prescribed.",
+        "If you have a family history of thyroid disease, schedule regular screenings.",
+        "Maintain a healthy lifestyle with balanced nutrition and regular exercise."
+      ]
+    },
+    "Alzheimer's Disease": {
+      "positive": [
+        "Consult a neurologist or geriatrician for cognitive assessment and MRI.",
+        "Early treatment with cholinesterase inhibitors may slow progression.",
+        "Engage in cognitive training exercises and mentally stimulating activities.",
+        "Plan for future care needs: advance directives, legal documents.",
+        "Connect with the Alzheimer's Association for caregiver support resources.",
+        "Maintain physical activity — it supports brain health and mood.",
+        "Create a safe home environment to reduce accident risk."
+      ],
+      "negative": [
+        "Stay mentally active: read, learn new skills, solve puzzles.",
+        "Exercise regularly — aerobic activity promotes neuroplasticity.",
+        "Maintain a Mediterranean or MIND diet for brain health.",
+        "Sleep 7–9 hours per night — poor sleep increases amyloid buildup.",
+        "Control cardiovascular risk factors (blood pressure, diabetes, cholesterol).",
+        "Stay socially engaged — social activity protects cognitive function.",
+        "Report any memory concerns or cognitive changes to your doctor early."
+      ]
+    }
+  } %}
+
+  {# Fallback recommendations if disease not in dict #}
+  {% set disease_recs_all = recs.get(disease, {
+    "positive": [
+      "Consult a qualified medical professional for a thorough evaluation.",
+      "Follow prescribed treatment protocols and medication schedules.",
+      "Monitor relevant biomarkers regularly as advised.",
+      "Adopt a healthy lifestyle: balanced diet, regular exercise.",
+      "Attend all scheduled follow-up appointments."
+    ],
+    "negative": [
+      "Maintain regular health check-ups with your doctor.",
+      "Follow a balanced diet and engage in regular physical activity.",
+      "Monitor for any new or changing symptoms.",
+      "Report any health concerns to your healthcare provider promptly."
+    ]
+  }) %}
+
+  {% if is_positive %}
+    {% set active_recs = disease_recs_all.get("positive", []) %}
+  {% else %}
+    {% set active_recs = disease_recs_all.get("negative", []) %}
+  {% endif %}
+
+  <style>
+    /* ── Result page specific styles ── */
+
+    .page-wrapper { padding-top: 68px; min-height: 100vh; }
+
+    /* ── Result hero ── */
+    .result-hero {
+      padding: 3.5rem 0 0;
+      background: radial-gradient(
+        ellipse 70% 70% at 50% 0%,
+        color-mix(in srgb, {{ result_color }} 8%, transparent) 0%,
+        transparent 65%
+      ), var(--bg-base);
+      position: relative; overflow: hidden;
+    }
+
+    /* ── Verdict card (the big result display) ── */
+    .verdict-card {
+      background: {{ result_bg }};
+      border: 1px solid {{ result_border }};
+      border-radius: 24px;
+      padding: 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .verdict-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 4px;
+      background: {{ result_color }};
+      border-radius: 24px 24px 0 0;
+    }
+
+    /* Large result icon */
+    .verdict-icon-wrap {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: color-mix(in srgb, {{ result_color }} 18%, transparent);
+      border: 2px solid color-mix(in srgb, {{ result_color }} 35%, transparent);
+      display: inline-flex; align-items: center; justify-content: center;
+      color: {{ result_color }};
+      font-size: 2.4rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 0 40px color-mix(in srgb, {{ result_color }} 25%, transparent);
+      animation: verdictPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes verdictPulse {
+      0%,100%{ box-shadow: 0 0 30px color-mix(in srgb, {{ result_color }} 22%, transparent); }
+      50%    { box-shadow: 0 0 55px color-mix(in srgb, {{ result_color }} 40%, transparent); }
+    }
+
+    .verdict-label {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem; font-weight: 600;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: {{ result_color }};
+      background: color-mix(in srgb, {{ result_color }} 10%, transparent);
+      border: 1px solid color-mix(in srgb, {{ result_color }} 25%, transparent);
+      border-radius: 2rem; padding: .32rem 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .verdict-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+      font-weight: 900; letter-spacing: -.03em;
+      color: var(--text-primary);
+      margin-bottom: .75rem; line-height: 1.12;
+    }
+
+    .verdict-sub {
+      font-size: .97rem; color: var(--text-secondary);
+      max-width: 560px; margin: 0 auto 1.5rem;
+      line-height: 1.72;
+    }
+
+    /* Disease name tag */
+    .verdict-disease-tag {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .82rem; font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-card);
+      border-radius: 2rem; padding: .35rem 1rem;
+    }
+
+    /* ── Confidence gauge ── */
+    .gauge-section {
+      padding: 2.5rem 0 0;
+    }
+
+    .gauge-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: 20px; padding: 2rem;
+      height: 100%;
+    }
+
+    .gauge-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: .9rem; font-weight: 700;
+      color: var(--text-primary); margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .gauge-title i { color: {{ result_color }}; }
+
+    /* SVG circular gauge */
+    .gauge-svg-wrap {
+      display: flex; justify-content: center; margin-bottom: 1.25rem;
+    }
+
+    .gauge-svg {
+      width: 160px; height: 160px;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-bg   { fill: none; stroke: var(--border-subtle); stroke-width: 12; }
+    .gauge-fill {
+      fill: none;
+      stroke: {{ result_color }};
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 0 440; /* animated by JS */
+      transition: stroke-dasharray 1.4s cubic-bezier(.22,1,.36,1);
+      filter: drop-shadow(0 0 6px color-mix(in srgb, {{ result_color }} 55%, transparent));
+    }
+
+    .gauge-centre {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+
+    .gauge-wrap-rel { position: relative; width: 160px; height: 160px; }
+
+    .gauge-pct {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 2.1rem; font-weight: 900;
+      letter-spacing: -.04em;
+      color: {{ result_color }};
+      line-height: 1;
+    }
+
+    .gauge-pct-label {
+      font-size: .7rem; color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: .06em;
+    }
+
+    /* Linear confidence bar (below gauge) */
+    .conf-bar-track {
+      height: 8px;
+      background: var(--border-subtle);
+      border-radius: 8px; overflow: hidden;
+      margin-bottom: .5rem;
+    }
+    .conf-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, {{ result_color }}, color-mix(in srgb, {{ result_color }} 70%, #fff));
+      border-radius: 8px;
+      transition: width 1.4s cubic-bezier(.22,1,.36,1);
+    }
+
+    .conf-labels {
+      display: flex; justify-content: space-between;
+      font-size: .7rem; color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Risk level card ── */
+    .risk-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: 20px; padding: 2rem;
+      height: 100%;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; justify-content: center;
+    }
+
+    .risk-icon-wrap {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: color-mix(in srgb, {{ risk_color }} 14%, transparent);
+      border: 2px solid color-mix(in srgb, {{ risk_color }} 30%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      color: {{ risk_color }};
+      font-size: 1.8rem; margin-bottom: 1rem;
+    }
+
+    .risk-label-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem; font-weight: 500;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: .4rem;
+    }
+
+    .risk-level-text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.8rem; font-weight: 900;
+      letter-spacing: -.03em;
+      color: {{ risk_color }};
+      margin-bottom: .5rem;
+    }
+
+    .risk-desc {
+      font-size: .82rem; color: var(--text-secondary);
+      line-height: 1.6; max-width: 220px;
+    }
+
+    /* ── Metrics row ── */
+    .metrics-section { padding: 2rem 0 0; }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: 16px; padding: 1.4rem;
+      display: flex; align-items: center; gap: 1rem;
+      height: 100%;
+    }
+
+    .metric-icon {
+      width: 46px; height: 46px; border-radius: 13px;
+      background: color-mix(in srgb, var(--mc-color) 13%, transparent);
+      border: 1px solid color-mix(in srgb, var(--mc-color) 26%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--mc-color); font-size: 1.1rem; flex-shrink: 0;
+    }
+
+    .metric-body {}
+    .metric-val {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.3rem; font-weight: 800;
+      letter-spacing: -.02em;
+      color: var(--text-primary); line-height: 1.1;
+    }
+    .metric-key {
+      font-size: .75rem; color: var(--text-secondary);
+      font-weight: 500; margin-top: .1rem;
+    }
+
+    /* ── Recommendations section ── */
+    .recs-section {
+      padding: 2rem 0 0;
+    }
+
+    .recs-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: 20px; overflow: hidden;
+    }
+
+    .recs-header {
+      padding: 1.3rem 1.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex; align-items: center; gap: .75rem;
+      background: color-mix(in srgb, {{ result_color }} 5%, transparent);
+    }
+
+    .recs-header-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: color-mix(in srgb, {{ result_color }} 15%, transparent);
+      border: 1px solid color-mix(in srgb, {{ result_color }} 28%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      color: {{ result_color }}; font-size: .9rem;
+    }
+
+    .recs-header h5 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1rem; font-weight: 700; margin: 0;
+      color: var(--text-primary);
+    }
+    .recs-header p { font-size: .78rem; color: var(--text-secondary); margin: 0; }
+
+    .recs-body { padding: 1.5rem 1.75rem; }
+
+    .rec-item {
+      display: flex; align-items: flex-start; gap: .85rem;
+      padding: .85rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background .2s;
+    }
+    .rec-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .rec-num {
+      width: 26px; height: 26px; border-radius: 8px;
+      background: color-mix(in srgb, {{ result_color }} 12%, transparent);
+      border: 1px solid color-mix(in srgb, {{ result_color }} 25%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .68rem; font-weight: 700;
+      color: {{ result_color }};
+      flex-shrink: 0; margin-top: .1rem;
+    }
+
+    .rec-text {
+      font-size: .88rem; line-height: 1.68;
+      color: var(--text-secondary);
+    }
+    .rec-text strong { color: var(--text-primary); }
+
+    /* ── Action buttons section ── */
+    .actions-section {
+      padding: 2rem 0 4rem;
+    }
+
+    .actions-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: 20px; padding: 2rem;
+      display: flex; flex-wrap: wrap;
+      align-items: center; gap: 1rem;
+    }
+
+    /* Primary: Download PDF */
+    .btn-download-pdf {
+      display: inline-flex; align-items: center; gap: .6rem;
+      padding: .88rem 1.8rem; border-radius: 14px;
+      background: linear-gradient(135deg, {{ result_color }},
+        color-mix(in srgb, {{ result_color }} 70%, #000));
+      color: #fff; font-weight: 700; font-size: .95rem;
+      border: none; cursor: pointer;
+      box-shadow: 0 4px 20px color-mix(in srgb, {{ result_color }} 38%, transparent);
+      font-family: 'Inter', sans-serif;
+      transition: transform .25s, box-shadow .25s;
+      text-decoration: none;
+    }
+    .btn-download-pdf:hover {
+      color: #fff; transform: translateY(-3px);
+      box-shadow: 0 8px 28px color-mix(in srgb, {{ result_color }} 52%, transparent);
+    }
+
+    /* Secondary: Try another disease */
+    .btn-try-another {
+      display: inline-flex; align-items: center; gap: .6rem;
+      padding: .88rem 1.6rem; border-radius: 14px;
+      background: rgba(0,212,184,.08);
+      color: var(--accent-teal);
+      border: 1px solid rgba(0,212,184,.28);
+      font-weight: 600; font-size: .9rem;
+      font-family: 'Inter', sans-serif;
+      text-decoration: none;
+      transition: background .2s, transform .2s, box-shadow .2s;
+    }
+    .btn-try-another:hover {
+      color: var(--accent-teal);
+      background: rgba(0,212,184,.15);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,212,184,.22);
+    }
+
+    /* Ghost: Back to home */
+    .btn-back-home {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .88rem 1.4rem; border-radius: 14px;
+      background: transparent; color: var(--text-secondary);
+      border: 1px solid var(--border-card);
+      font-weight: 600; font-size: .9rem;
+      font-family: 'Inter', sans-serif;
+      text-decoration: none;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    .btn-back-home:hover {
+      color: var(--text-primary);
+      border-color: var(--border-card);
+      background: var(--bg-elevated);
+    }
+
+    /* Timestamp + model tag */
+    .result-meta {
+      margin-left: auto;
+      text-align: right;
+    }
+    .result-meta p {
+      font-size: .72rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin: 0 0 .2rem;
+    }
+
+    /* ── Breadcrumb ── */
+    .dh-breadcrumb {
+      display: flex; align-items: center; gap: .5rem;
+      font-size: .78rem; color: var(--text-muted);
+      margin-bottom: 1.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .dh-breadcrumb a { color: var(--text-muted); text-decoration: none; transition: color .2s; }
+    .dh-breadcrumb a:hover { color: var(--accent-teal); }
+    .dh-breadcrumb .sep { color: var(--border-card); }
+    .dh-breadcrumb .current { color: {{ result_color }}; font-weight: 600; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .verdict-card { padding: 1.75rem 1.25rem; }
+      .actions-card { flex-direction: column; align-items: stretch; }
+      .btn-download-pdf,
+      .btn-try-another,
+      .btn-back-home { justify-content: center; width: 100%; }
+      .result-meta { margin-left: 0; text-align: left; width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══ NAVBAR ═══ -->
+  <nav class="site-nav scrolled" id="siteNav">
+    <div class="nav-container">
+      <a href="/" class="nav-brand" aria-label="DiagnosTenAI Home">
+        <div class="brand-icon">
+            <img src="{{ url_for('static', filename='images/logo.png') }}"
+                 alt="DiagnosTenAI Logo"
+                 class="site-logo">
+        </div>
+        <span class="brand-name">DiagnosTen<span class="brand-accent">AI</span></span>
+      </a>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="/"          class="nav-link-item">Home</a></li>
+        <li><a href="/#diseases" class="nav-link-item">Diseases</a></li>
+        <li><a href="/#stats"    class="nav-link-item">Statistics</a></li>
+        <li><a href="/#how-it-works" class="nav-link-item">How It Works</a></li>
+      </ul>
+
+      <div class="nav-controls">
+        <button class="theme-btn" id="themeToggle" aria-label="Toggle theme">
+          <i class="fa-solid fa-moon" id="themeIcon"></i>
+        </button>
+        <div class="creator-wrapper" id="creatorWrapper">
+          <button class="creator-btn" id="creatorBtn" aria-expanded="false">
+            <span class="creator-pulse"></span>
+            <i class="fa-solid fa-code-branch me-1"></i>Creator
+            <i class="fa-solid fa-chevron-down creator-chevron"></i>
+          </button>
+          <div class="creator-dropdown" id="creatorDropdown">
+            <div class="cd-header">
+              <div class="cd-avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+              <div class="cd-info">
+                <p class="cd-name">Mowshik G</p>
+                <p class="cd-role">CSE(AI & ML) · KPRIET</p>
+              </div>
+            </div>
+            <div class="cd-links">
+              <a href="mailto:dharshanmowshik@gmail.com" class="cd-link cd-email">
+                <i class="fa-solid fa-envelope"></i><span>dharshanmowshik@gmail.com</span>
+              </a>
+              <a href="https://github.com/Mowshik1210" target="_blank" rel="noopener" class="cd-link cd-github">
+                <i class="fa-brands fa-github"></i><span>github.com/Mowshik1210</span>
+              </a>
+              <a href="https://linkedin.com/in/mowshik-g/" target="_blank" rel="noopener" class="cd-link cd-linkedin">
+                <i class="fa-brands fa-linkedin-in"></i><span>linkedin.com/in/mowshik-g/</span>
+              </a>
+            </div>
+            <div class="cd-footer-tag">
+              <i class="fa-solid fa-briefcase me-1"></i>KPRIET · Batch 2026
+            </div>
+          </div>
+        </div>
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="container" style="padding-top: 2.5rem;">
+
+      <!-- Breadcrumb -->
+      <nav class="dh-breadcrumb" aria-label="Breadcrumb">
+        <a href="/"><i class="fa-solid fa-house me-1"></i>Home</a>
+        <span class="sep">/</span>
+        <a href="/#diseases">Diseases</a>
+        <span class="sep">/</span>
+        <span>{{ disease }}</span>
+        <span class="sep">/</span>
+        <span class="current">Result</span>
+      </nav>
+
+
+      <!-- ═══ 1. VERDICT CARD ═══ -->
+      <div class="result-hero">
+        <div class="verdict-card">
+
+          <!-- Pulsing icon -->
+          <div class="verdict-icon-wrap" aria-hidden="true">
+            <i class="fa-solid {{ result_icon }}"></i>
+          </div>
+
+          <!-- Prediction label pill -->
+          <div class="mb-2">
+            <span class="verdict-label">
+              <i class="fa-solid fa-circle-dot" style="font-size:.55rem;"></i>
+              AI Prediction: {{ result_label }}
+            </span>
+          </div>
+
+          <!-- Main verdict heading -->
+          <h1 class="verdict-title">{{ verdict_text }}</h1>
+
+          <!-- Contextual description -->
+          <p class="verdict-sub">{{ verdict_sub }}</p>
+
+          <!-- Disease name tag -->
+          <span class="verdict-disease-tag">
+            <i class="fa-solid fa-stethoscope" style="font-size:.75rem;"></i>
+            {{ disease }}
+          </span>
+
+        </div>
+      </div>
+      <!-- /result-hero -->
+
+
+      <!-- ═══ 2. CONFIDENCE GAUGE + RISK LEVEL ═══ -->
+      <div class="gauge-section">
+        <div class="row g-4">
+
+          <!-- Circular gauge -->
+          <div class="col-lg-6">
+            <div class="gauge-card">
+              <p class="gauge-title">
+                <i class="fa-solid fa-gauge-high"></i>
+                Model Confidence
+              </p>
+
+              <!-- SVG circle gauge + centre number -->
+              <div class="gauge-svg-wrap">
+                <div class="gauge-wrap-rel">
+                  <svg class="gauge-svg" viewBox="0 0 160 160" id="gaugeSvg"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background ring -->
+                    <circle class="gauge-bg" cx="80" cy="80" r="70" />
+                    <!-- Animated fill ring -->
+                    <circle class="gauge-fill" id="gaugeFill"
+                            cx="80" cy="80" r="70"
+                            stroke-dasharray="0 440" />
+                  </svg>
+                  <!-- Centred text overlay -->
+                  <div class="gauge-centre">
+                    <span class="gauge-pct" id="gaugePct">0</span>
+                    <span class="gauge-pct-label">CONFIDENCE</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Linear bar below gauge -->
+              <div class="conf-bar-track">
+                <div class="conf-bar-fill" id="confBarFill"></div>
+              </div>
+              <div class="conf-labels">
+                <span>0%</span>
+                <span>50%</span>
+                <span>100%</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Risk level display -->
+          <div class="col-lg-6">
+            <div class="risk-card">
+              <div class="risk-icon-wrap">
+                <i class="fa-solid {{ risk_icon }}"></i>
+              </div>
+              <p class="risk-label-text">Risk Assessment</p>
+              <p class="risk-level-text">{{ risk_level }} Risk</p>
+              <p class="risk-desc">
+                {% if is_positive %}
+                  Based on a {{ "%.1f" | format(conf) }}% confidence score,
+                  the model indicates a <strong>{{ risk_level | lower }}</strong> probability
+                  of {{ disease }}. Seek professional medical evaluation promptly.
+                {% else %}
+                  Based on a {{ "%.1f" | format(conf) }}% confidence score,
+                  the model indicates a <strong>{{ risk_level | lower }}</strong> probability
+                  of {{ disease }}. Continue healthy preventive care.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ═══ 3. KEY METRICS ROW ═══ -->
+      <div class="metrics-section">
+        <div class="row g-3">
+
+          <div class="col-lg-3 col-sm-6">
+            <div class="metric-card" style="--mc-color:{{ result_color }};">
+              <div class="metric-icon">
+                <i class="fa-solid fa-circle-dot"></i>
+              </div>
+              <div class="metric-body">
+                <p class="metric-val">{{ result_label }}</p>
+                <p class="metric-key">Prediction Outcome</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-sm-6">
+            <div class="metric-card" style="--mc-color:{{ result_color }};">
+              <div class="metric-icon">
+                <i class="fa-solid fa-percent"></i>
+              </div>
+              <div class="metric-body">
+                <p class="metric-val">{{ "%.2f" | format(conf) }}%</p>
+                <p class="metric-key">Confidence Score</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-sm-6">
+            <div class="metric-card" style="--mc-color:{{ risk_color }};">
+              <div class="metric-icon">
+                <i class="fa-solid {{ risk_icon }}"></i>
+              </div>
+              <div class="metric-body">
+                <p class="metric-val">{{ risk_level }}</p>
+                <p class="metric-key">Risk Level</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-sm-6">
+            <div class="metric-card" style="--mc-color:#818CF8;">
+              <div class="metric-icon">
+                <i class="fa-solid fa-tree"></i>
+              </div>
+              <div class="metric-body">
+                <p class="metric-val">RF · 200</p>
+                <p class="metric-key">Algorithm · Estimators</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ═══ 4. RECOMMENDATIONS ═══ -->
+      <div class="recs-section">
+        <div class="recs-card">
+
+          <div class="recs-header">
+            <div class="recs-header-icon">
+              <i class="fa-solid fa-notes-medical"></i>
+            </div>
+            <div>
+              <h5>Clinical Recommendations</h5>
+              <p>
+                {{ active_recs | length }} personalised actions for a
+                <em>{{ result_label | lower }}</em> {{ disease }} result
+              </p>
+            </div>
+          </div>
+
+          <div class="recs-body">
+            {% for rec in active_recs %}
+            <div class="rec-item">
+              <span class="rec-num">{{ "%02d" | format(loop.index) }}</span>
+              <p class="rec-text">{{ rec }}</p>
+            </div>
+            {% endfor %}
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ═══ 5. DISCLAIMER ═══ -->
+      <div class="d-flex align-items-start gap-3 mt-3 p-3"
+           style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.22);border-radius:14px;">
+        <i class="fa-solid fa-triangle-exclamation text-warning mt-1" style="flex-shrink:0;"></i>
+        <p style="font-size:.8rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+          <strong style="color:var(--text-primary);">Medical Disclaimer:</strong>
+          This AI result is generated for <strong>educational and portfolio purposes only</strong>.
+          It is <strong>not a medical diagnosis</strong>. The model may produce false positives
+          or negatives. Always consult a licensed healthcare professional for accurate
+          diagnosis and treatment. Do not make clinical decisions based on this output alone.
+        </p>
+      </div>
+
+
+      <!-- ═══ 6. ACTION BUTTONS ═══ -->
+      <div class="actions-section">
+        <div class="actions-card">
+
+          <!-- PDF download — form POST to /download_report (wired in final app.py) -->
+          <form action="/download_report" method="POST" id="reportForm" style="display:contents;">
+            <input type="hidden" name="disease"    value="{{ disease }}" />
+            <input type="hidden" name="prediction" value="{{ prediction }}" />
+            <input type="hidden" name="confidence" value="{{ confidence }}" />
+            <input type="hidden" name="risk_level" value="{{ risk_level }}" />
+            <input type="hidden" name="result_label" value="{{ result_label }}" />
+            <button type="submit" class="btn-download-pdf">
+              <i class="fa-solid fa-file-arrow-down"></i>
+              Download PDF Report
+            </button>
+          </form>
+
+          <!-- Try another disease -->
+          <a href="/#diseases" class="btn-try-another">
+            <i class="fa-solid fa-rotate"></i>
+            Try Another Disease
+          </a>
+
+          <!-- Back to home -->
+          <a href="/" class="btn-back-home">
+            <i class="fa-solid fa-house"></i>
+            Home
+          </a>
+
+          <!-- Timestamp + model note -->
+          <div class="result-meta">
+            <p id="resultTimestamp">Generated: —</p>
+            <p>Model: RandomForest · scikit-learn 1.6</p>
+          </div>
+
+        </div>
+      </div>
+
+
+    </div><!-- /container -->
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-bottom" style="margin-top:0;border-top:1px solid var(--border-subtle);">
+          <p>
+            &copy; 2024 <strong>DiagnosTenAI</strong> — Built by
+            <a href="https://github.com/Mowshik1210" target="_blank" rel="noopener">Mowshik G</a>
+            &nbsp;·&nbsp; KPRIET · Batch 2026
+          </p>
+          <p class="footer-stack-text">Flask · Scikit-Learn · Random Forest · Bootstrap 5</p>
+        </div>
+      </div>
+    </footer>
+
+  </div><!-- /page-wrapper -->
+
+
+  <!-- ═══ SCRIPTS ═══ -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <script>
+    /* ── Result page specific JS ── */
+    (function () {
+      "use strict";
+
+      /* Confidence value passed from Flask via Jinja2 */
+      const CONFIDENCE = {{ confidence | float }};
+
+      /* ── Circular gauge animation ── */
+      const gaugeFill = document.getElementById("gaugeFill");
+      const gaugePct  = document.getElementById("gaugePct");
+      const CIRCUMFERENCE = 2 * Math.PI * 70; /* r = 70 */
+
+      function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+
+      function animateGauge() {
+        const duration = 1400;
+        const start    = performance.now();
+
+        function tick(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          const eased    = easeOutQuart(progress);
+          const value    = Math.round(CONFIDENCE * eased * 10) / 10;
+          const filled   = (CONFIDENCE / 100) * CIRCUMFERENCE * eased;
+          const gap      = CIRCUMFERENCE - filled;
+
+          if (gaugeFill) {
+            gaugeFill.setAttribute("stroke-dasharray", `${filled} ${gap}`);
+          }
+          if (gaugePct) {
+            gaugePct.textContent = Math.round(value) + "%";
+          }
+
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      /* ── Linear confidence bar animation ── */
+      function animateBar() {
+        const bar = document.getElementById("confBarFill");
+        if (!bar) return;
+        /* Trigger width transition via CSS after a short delay */
+        setTimeout(() => { bar.style.width = CONFIDENCE + "%"; }, 300);
+      }
+
+      /* ── Run animations when page is visible ── */
+      setTimeout(() => {
+        animateGauge();
+        animateBar();
+      }, 500); /* slight delay so loader is gone */
+
+      /* ── Live timestamp ── */
+      const tsEl = document.getElementById("resultTimestamp");
+      if (tsEl) {
+        const now = new Date();
+        tsEl.textContent = "Generated: " + now.toLocaleString("en-IN", {
+          day: "2-digit", month: "short", year: "numeric",
+          hour: "2-digit", minute: "2-digit"
+        });
+      }
+
+      /* ── Recommendation items: stagger fade-in ── */
+      document.querySelectorAll(".rec-item").forEach((el, i) => {
+        el.style.opacity   = "0";
+        el.style.transform = "translateX(-12px)";
+        el.style.transition= "opacity .4s ease, transform .4s ease";
+        setTimeout(() => {
+          el.style.opacity   = "1";
+          el.style.transform = "translateX(0)";
+        }, 900 + i * 90);
+      });
+
+      /* ── Metric cards: stagger fade-up ── */
+      document.querySelectorAll(".metric-card").forEach((el, i) => {
+        el.style.opacity   = "0";
+        el.style.transform = "translateY(18px)";
+        el.style.transition= "opacity .45s ease, transform .45s ease";
+        setTimeout(() => {
+          el.style.opacity   = "1";
+          el.style.transform = "translateY(0)";
+        }, 600 + i * 100);
+      });
+
+    })();
+  </script>
+
+</body>
+</html>

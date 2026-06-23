@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<!--
+  DiagnosTenAI — Multi Disease Prediction System
+  File : templates/disease.html
+  Flask variables consumed:
+    disease     — dict  { name, model }
+    disease_key — str   e.g. "heart"
+    columns     — list  feature column names from model_data["columns"]
+  Form action  : POST /predict/<disease_key>
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ disease.name }} Prediction | DiagnosTenAI</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+
+  <style>
+    /* ── Page-specific overrides for disease.html ── */
+
+    /* Push content below fixed navbar */
+    .page-wrapper { padding-top: 68px; min-height: 100vh; }
+
+    /* ── Disease hero banner ── */
+    .disease-hero {
+      padding: 3rem 0 2.5rem;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border-subtle);
+      background: radial-gradient(
+        ellipse 60% 80% at 80% 50%,
+        color-mix(in srgb, var(--dh-color) 8%, transparent) 0%,
+        transparent 70%
+      ), var(--bg-surface);
+    }
+
+    .disease-hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    /* Breadcrumb */
+    .dh-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .78rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .dh-breadcrumb a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .dh-breadcrumb a:hover { color: var(--accent-teal); }
+    .dh-breadcrumb .sep { color: var(--border-card); }
+    .dh-breadcrumb .current { color: var(--dh-color); font-weight: 600; }
+
+    /* Disease icon + title row */
+    .dh-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .dh-icon-wrap {
+      width: 72px; height: 72px;
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--dh-color) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--dh-color) 30%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--dh-color);
+      font-size: 1.8rem; flex-shrink: 0;
+      box-shadow: 0 8px 28px color-mix(in srgb, var(--dh-color) 22%, transparent);
+    }
+
+    .dh-title-block { flex: 1; min-width: 0; }
+
+    .dh-tag {
+      font-size: .7rem; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--dh-color);
+      margin-bottom: .3rem; display: block;
+    }
+
+    .dh-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      font-weight: 900; letter-spacing: -.03em;
+      color: var(--text-primary);
+      margin-bottom: .5rem; line-height: 1.1;
+    }
+
+    .dh-desc {
+      font-size: .95rem; color: var(--text-secondary);
+      line-height: 1.7; max-width: 600px;
+    }
+
+    /* Hero mini-badges */
+    .dh-badges {
+      display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.25rem;
+    }
+
+    .dh-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .75rem; font-weight: 600;
+      padding: .32rem .85rem; border-radius: 2rem;
+      background: color-mix(in srgb, var(--dh-color) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--dh-color) 25%, transparent);
+      color: var(--dh-color);
+    }
+
+    /* ── Main layout ── */
+    .disease-main {
+      padding: 2.5rem 0 4rem;
+    }
+
+    /* ── Form card ── */
+    .form-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .form-card-header {
+      padding: 1.4rem 1.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex; align-items: center; gap: .75rem;
+      background: color-mix(in srgb, var(--dh-color) 5%, transparent);
+    }
+
+    .form-card-header-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: color-mix(in srgb, var(--dh-color) 15%, transparent);
+      border: 1px solid color-mix(in srgb, var(--dh-color) 28%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--dh-color); font-size: .9rem;
+    }
+
+    .form-card-header h5 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      letter-spacing: -.01em; color: var(--text-primary); margin: 0;
+    }
+
+    .form-card-header p {
+      font-size: .78rem; color: var(--text-secondary); margin: 0;
+    }
+
+    .form-card-body { padding: 1.75rem; }
+
+    /* ── Input field group ── */
+    .field-group {
+      display: flex; flex-direction: column; gap: .4rem;
+      margin-bottom: .25rem;
+    }
+
+    .field-label {
+      font-size: .82rem; font-weight: 600;
+      color: var(--text-secondary);
+      display: flex; align-items: center; gap: .4rem;
+    }
+
+    .field-label .field-index {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .65rem; font-weight: 500;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: .1rem .38rem;
+    }
+
+    /* Custom input */
+    .field-input {
+      width: 100%;
+      padding: .75rem 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: .92rem;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+
+    .field-input::placeholder { color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: .83rem; }
+
+    .field-input:focus {
+      border-color: color-mix(in srgb, var(--dh-color) 60%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--dh-color) 12%, transparent);
+      background: var(--bg-hover);
+    }
+
+    /* Valid / invalid state feedback */
+    .field-input.is-valid   { border-color: #34D399; }
+    .field-input.is-invalid { border-color: #F87171; }
+
+    .field-hint {
+      font-size: .72rem; color: var(--text-muted);
+      padding-left: .25rem;
+    }
+
+    /* ── Divider with label ── */
+    .form-divider {
+      display: flex; align-items: center; gap: 1rem;
+      margin: 1.75rem 0;
+      color: var(--text-muted); font-size: .75rem;
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+    .form-divider::before,
+    .form-divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--border-subtle);
+    }
+
+    /* ── Submit / action bar ── */
+    .form-action-bar {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      align-items: center; margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .btn-predict {
+      display: inline-flex; align-items: center; gap: .6rem;
+      padding: .9rem 2.2rem; border-radius: 14px;
+      background: linear-gradient(135deg, var(--dh-color), color-mix(in srgb, var(--dh-color) 75%, #000));
+      color: #fff; font-weight: 700; font-size: 1rem;
+      border: none; cursor: pointer;
+      box-shadow: 0 4px 20px color-mix(in srgb, var(--dh-color) 38%, transparent);
+      transition: transform .25s, box-shadow .25s, opacity .2s;
+      position: relative; overflow: hidden;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-predict:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px color-mix(in srgb, var(--dh-color) 52%, transparent);
+    }
+
+    .btn-predict:active { transform: translateY(0); }
+
+    .btn-predict.loading {
+      opacity: .8; pointer-events: none; cursor: wait;
+    }
+
+    .btn-predict .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    .btn-predict.loading .btn-icon  { display: none; }
+    .btn-predict.loading .spinner   { display: block; }
+    .btn-predict.loading .btn-label { opacity: .7; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn-reset {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .9rem 1.5rem; border-radius: 14px;
+      background: transparent; color: var(--text-secondary);
+      font-size: .9rem; font-weight: 600;
+      border: 1px solid var(--border-card); cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    .btn-reset:hover {
+      color: var(--accent-pink); border-color: rgba(244,114,182,.4);
+      background: rgba(244,114,182,.06);
+    }
+
+    .field-count-badge {
+      margin-left: auto;
+      font-size: .75rem; color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: 18px; padding: 1.4rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .sidebar-card-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: .85rem; font-weight: 700;
+      letter-spacing: -.01em; color: var(--text-primary);
+      margin-bottom: 1rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+
+    .sidebar-card-title i {
+      color: var(--dh-color); font-size: .9rem;
+    }
+
+    /* Model stat row */
+    .model-stat-row {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: .55rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: .83rem;
+    }
+    .model-stat-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .msr-key { color: var(--text-secondary); }
+    .msr-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem; font-weight: 600;
+      color: var(--dh-color);
+    }
+
+    /* Tips list */
+    .tips-list { list-style: none; padding: 0; margin: 0; }
+    .tips-list li {
+      display: flex; align-items: flex-start; gap: .6rem;
+      font-size: .82rem; color: var(--text-secondary);
+      padding: .45rem 0; border-bottom: 1px solid var(--border-subtle);
+      line-height: 1.55;
+    }
+    .tips-list li:last-child { border-bottom: none; padding-bottom: 0; }
+    .tips-list li i { color: var(--accent-teal); margin-top: .2rem; font-size: .75rem; flex-shrink: 0; }
+
+    /* Back link */
+    .back-link {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .85rem; font-weight: 600;
+      color: var(--text-secondary); text-decoration: none;
+      padding: .5rem .9rem; border-radius: 10px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-surface);
+      transition: color .2s, border-color .2s, background .2s;
+      margin-bottom: 1.5rem; display: inline-flex;
+    }
+    .back-link:hover {
+      color: var(--accent-teal);
+      border-color: rgba(0,212,184,.35);
+      background: rgba(0,212,184,.05);
+    }
+
+    /* ── Validation error toast ── */
+    .toast-error {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9000;
+      background: var(--bg-elevated);
+      border: 1px solid rgba(248,113,113,.35);
+      border-left: 4px solid #F87171;
+      border-radius: 14px;
+      padding: .9rem 1.2rem;
+      box-shadow: var(--shadow-lg);
+      display: flex; align-items: center; gap: .75rem;
+      min-width: 280px; max-width: 380px;
+      transform: translateX(120%);
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+      font-size: .87rem; color: var(--text-primary);
+    }
+    .toast-error.show { transform: translateX(0); }
+    .toast-error i { color: #F87171; font-size: 1.1rem; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .dh-icon-wrap { width: 56px; height: 56px; font-size: 1.4rem; border-radius: 15px; }
+      .dh-title     { font-size: 1.5rem; }
+      .form-card-body { padding: 1.25rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══ NAVBAR (identical to index.html) ═══ -->
+  <nav class="site-nav" id="siteNav">
+    <div class="nav-container">
+      <a href="/" class="nav-brand" aria-label="DiagnosTenAI Home">
+        <div class="brand-icon">
+            <img src="{{ url_for('static', filename='images/logo.png') }}"
+                 alt="DiagnosTenAI Logo"
+                 class="site-logo">
+        </div>
+        <span class="brand-name">DiagnosTen<span class="brand-accent">AI</span></span>
+      </a>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="/"          class="nav-link-item">Home</a></li>
+        <li><a href="/#diseases" class="nav-link-item active">Diseases</a></li>
+        <li><a href="/#stats"    class="nav-link-item">Statistics</a></li>
+        <li><a href="/#how-it-works" class="nav-link-item">How It Works</a></li>
+      </ul>
+
+      <div class="nav-controls">
+        <button class="theme-btn" id="themeToggle" aria-label="Toggle theme">
+          <i class="fa-solid fa-moon" id="themeIcon"></i>
+        </button>
+
+        <div class="creator-wrapper" id="creatorWrapper">
+          <button class="creator-btn" id="creatorBtn" aria-expanded="false">
+            <span class="creator-pulse"></span>
+            <i class="fa-solid fa-code-branch me-1"></i>Creator
+            <i class="fa-solid fa-chevron-down creator-chevron"></i>
+          </button>
+          <div class="creator-dropdown" id="creatorDropdown">
+            <div class="cd-header">
+              <div class="cd-avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+              <div class="cd-info">
+                <p class="cd-name">Mowshik G</p>
+                <p class="cd-role"> CSE(AI & ML) at KPRIET</p>
+              </div>
+            </div>
+            <div class="cd-links">
+              <a href="mailto:dharshanmowshik@gmail.com" class="cd-link cd-email">
+                <i class="fa-solid fa-envelope"></i><span>dharshanmowshik@gmail.com</span>
+              </a>
+              <a href="https://github.com/Mowshik1210" target="_blank" rel="noopener" class="cd-link cd-github">
+                <i class="fa-brands fa-github"></i><span>github.com/Mowshik1210</span>
+              </a>
+              <a href="https://linkedin.com/in/mowshik-g" target="_blank" rel="noopener" class="cd-link cd-linkedin">
+                <i class="fa-brands fa-linkedin-in"></i><span>linkedin.com/in/mowshik-g</span>
+              </a>
+            </div>
+            <div class="cd-footer-tag">
+              <i class="fa-solid fa-briefcase me-1"></i>KPRIET · Batch 2026
+            </div>
+          </div>
+        </div>
+
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+
+    <!-- ═══ DISEASE METADATA — mirrors index.html dm dict ═══ -->
+    {% set dm = {
+      'heart':        { 'icon':'fa-heart-pulse',   'color':'#FF6B9D', 'tag':'Cardiovascular',       'desc':'Predict coronary artery disease risk using ECG, cholesterol, and cardiac biomarkers.',        'accuracy':'96%', 'features_label':'13 clinical features' },
+      'diabetes':     { 'icon':'fa-syringe',        'color':'#00D4B8', 'tag':'Metabolic',             'desc':'Detect Type 2 Diabetes risk from glucose, insulin resistance, BMI, and pedigree function.',  'accuracy':'94%', 'features_label':'8 metabolic features'  },
+      'breast_cancer':{ 'icon':'fa-ribbon',         'color':'#F472B6', 'tag':'Oncology',              'desc':'Classify malignant vs benign breast tumors from fine needle aspiration cell features.',        'accuracy':'97%', 'features_label':'30 cell nucleus features'},
+      'parkinsons':   { 'icon':'fa-brain',          'color':'#A78BFA', 'tag':'Neurology',             'desc':'Identify Parkinson\'s disease signatures from biomedical voice measurements.',                'accuracy':'95%', 'features_label':'22 voice measurements' },
+      'kidney':       { 'icon':'fa-droplet',        'color':'#38BDF8', 'tag':'Nephrology',            'desc':'Predict chronic kidney disease from blood, urine, and lab test indicators.',                  'accuracy':'98%', 'features_label':'24 lab features'      },
+      'liver':        { 'icon':'fa-shield-halved',  'color':'#FB923C', 'tag':'Hepatology',            'desc':'Assess liver disease from bilirubin, alkaline phosphotase, and albumin results.',            'accuracy':'93%', 'features_label':'10 liver biomarkers'  },
+      'lung':         { 'icon':'fa-lungs',          'color':'#34D399', 'tag':'Pulmonology',           'desc':'Evaluate lung cancer risk from smoking history and clinical symptom profiles.',               'accuracy':'92%', 'features_label':'15 symptom features'  },
+      'stroke':       { 'icon':'fa-bolt',           'color':'#FBBF24', 'tag':'Neurovascular',         'desc':'Predict ischaemic stroke risk from hypertension, glucose, BMI and demographics.',           'accuracy':'95%', 'features_label':'10 risk factors'      },
+      'thyroid':      { 'icon':'fa-circle-nodes',   'color':'#818CF8', 'tag':'Endocrinology',         'desc':'Detect thyroid disease recurrence from clinical and histopathological features.',            'accuracy':'96%', 'features_label':'16 clinical markers'  },
+      'alzheimers':   { 'icon':'fa-network-wired',  'color':'#F87171', 'tag':'Geriatric Neurology',   'desc':'Assess Alzheimer\'s risk from cognitive assessments, MMSE score, and MRI data.',           'accuracy':'91%', 'features_label':'32 cognitive features' }
+    } %}
+
+    {% set meta = dm.get(disease_key, {
+      'icon':'fa-stethoscope','color':'#00D4B8','tag':'Medical',
+      'desc':'AI-powered disease prediction.','accuracy':'N/A','features_label':'Multiple features'
+    }) %}
+
+    <!-- CSS variable for disease accent colour — used throughout this page -->
+    <style>
+      :root { --dh-color: {{ meta.color }}; }
+    </style>
+
+
+    <!-- ═══ DISEASE HERO BANNER ═══ -->
+    <section class="disease-hero">
+      <div class="container">
+
+        <!-- Breadcrumb -->
+        <nav class="dh-breadcrumb" aria-label="Breadcrumb">
+          <a href="/"><i class="fa-solid fa-house me-1"></i>Home</a>
+          <span class="sep">/</span>
+          <a href="/#diseases">Diseases</a>
+          <span class="sep">/</span>
+          <span class="current">{{ disease.name }}</span>
+        </nav>
+
+        <!-- Icon + title -->
+        <div class="dh-top">
+          <div class="dh-icon-wrap">
+            <i class="fa-solid {{ meta.icon }}"></i>
+          </div>
+
+          <div class="dh-title-block">
+            <span class="dh-tag">
+              <i class="fa-solid fa-tag me-1" style="font-size:.6rem;"></i>
+              {{ meta.tag }}
+            </span>
+            <h1 class="dh-title">{{ disease.name }} <span style="color:var(--dh-color);">Prediction</span></h1>
+            <p class="dh-desc">{{ meta.desc }}</p>
+
+            <!-- Mini badges: accuracy, features, model -->
+            <div class="dh-badges">
+              <span class="dh-badge">
+                <i class="fa-solid fa-bullseye"></i>
+                {{ meta.accuracy }} Accuracy
+              </span>
+              <span class="dh-badge">
+                <i class="fa-solid fa-table-columns"></i>
+                {{ columns | length }} Input Features
+              </span>
+              <span class="dh-badge">
+                <i class="fa-solid fa-tree"></i>
+                Random Forest · 200 Estimators
+              </span>
+              <span class="dh-badge">
+                <i class="fa-solid fa-shield-halved"></i>
+                scikit-learn 1.6
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+    <!-- /disease-hero -->
+
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <div class="disease-main">
+      <div class="container">
+
+        <!-- Back button -->
+        <a href="/" class="back-link">
+          <i class="fa-solid fa-arrow-left"></i>
+          Back to Dashboard
+        </a>
+
+        <div class="row g-4">
+
+          <!-- ── LEFT: Prediction Form ── -->
+          <div class="col-lg-8">
+            <div class="form-card">
+
+              <!-- Card header -->
+              <div class="form-card-header">
+                <div class="form-card-header-icon">
+                  <i class="fa-solid fa-clipboard-list"></i>
+                </div>
+                <div>
+                  <h5>Patient Data Entry</h5>
+                  <p>Fill in all {{ columns | length }} clinical parameters below</p>
+                </div>
+              </div>
+
+              <!-- Card body: the form -->
+              <div class="form-card-body">
+                <form
+                  id="predictionForm"
+                  action="{{ url_for('predict', disease_key=disease_key) }}"
+                  method="POST"
+                  novalidate
+                >
+
+                  <div class="row g-3">
+                    {% for col in columns %}
+
+                    {#
+                      Generate a human-readable label from the column name:
+                      - Replace underscores and hyphens with spaces
+                      - Title-case the result
+                      e.g. "trestbps" → "Trestbps"
+                           "blood_pressure" → "Blood Pressure"
+                           "DiabetesPedigreeFunction" → cleaned by JS
+                    #}
+                    {% set label = col.replace('_', ' ').replace('-', ' ') | title %}
+
+                    <div class="col-md-6">
+                      <div class="field-group">
+                        <label class="field-label" for="field_{{ loop.index }}">
+                          <span class="field-index">{{ "%02d" | format(loop.index) }}</span>
+                          {{ label }}
+                        </label>
+                        <input
+                          type="number"
+                          id="field_{{ loop.index }}"
+                          name="{{ col }}"
+                          class="field-input"
+                          placeholder="Enter {{ label | lower }}"
+                          step="any"
+                          autocomplete="off"
+                          required
+                          aria-label="{{ label }}"
+                        />
+                        <span class="field-hint">
+                          <i class="fa-solid fa-circle-info" style="font-size:.65rem;"></i>
+                          Numeric value for <em>{{ col }}</em>
+                        </span>
+                      </div>
+                    </div>
+
+                    {# Insert a labelled divider every 8 fields for visual breathing room #}
+                    {% if loop.index % 8 == 0 and not loop.last %}
+                    </div>
+                    <div class="form-divider">
+                      <span>
+                        <i class="fa-solid fa-layer-group me-1"></i>
+                        Group {{ (loop.index // 8) + 1 }}
+                      </span>
+                    </div>
+                    <div class="row g-3">
+                    {% endif %}
+
+                    {% endfor %}
+                  </div>
+                  <!-- /row g-3 -->
+
+
+                  <!-- Action bar -->
+                  <div class="form-action-bar">
+                    <button type="submit" class="btn-predict" id="predictBtn">
+                      <span class="spinner" aria-hidden="true"></span>
+                      <i class="fa-solid fa-brain btn-icon"></i>
+                      <span class="btn-label">Run AI Prediction</span>
+                    </button>
+
+                    <button type="reset" class="btn-reset" id="resetBtn">
+                      <i class="fa-solid fa-rotate-left"></i>
+                      Clear Form
+                    </button>
+
+                    <span class="field-count-badge" id="fieldCountBadge">
+                      <i class="fa-solid fa-list-check me-1"></i>
+                      <span id="filledCount">0</span> / {{ columns | length }} filled
+                    </span>
+                  </div>
+
+                </form>
+                <!-- /form -->
+
+              </div>
+              <!-- /form-card-body -->
+            </div>
+            <!-- /form-card -->
+
+            <!-- Medical disclaimer banner -->
+            <div class="d-flex align-items-start gap-3 mt-3 p-3"
+                 style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.22);border-radius:14px;">
+              <i class="fa-solid fa-triangle-exclamation text-warning mt-1" style="flex-shrink:0;"></i>
+              <p style="font-size:.8rem;color:var(--text-secondary);margin:0;line-height:1.65;">
+                <strong style="color:var(--text-primary);">Medical Disclaimer:</strong>
+                This AI prediction is for <strong>educational and portfolio purposes only</strong>.
+                It is not a medical diagnosis. Always consult a qualified healthcare professional
+                for accurate medical advice and treatment decisions.
+              </p>
+            </div>
+
+          </div>
+          <!-- /col-lg-8 -->
+
+
+          <!-- ── RIGHT: Sidebar ── -->
+          <div class="col-lg-4">
+
+            <!-- Model info card -->
+            <div class="sidebar-card">
+              <p class="sidebar-card-title">
+                <i class="fa-solid fa-microchip"></i>
+                Model Information
+              </p>
+              <div class="model-stat-row">
+                <span class="msr-key">Algorithm</span>
+                <span class="msr-val">RandomForest</span>
+              </div>
+              <div class="model-stat-row">
+                <span class="msr-key">Estimators</span>
+                <span class="msr-val">200 trees</span>
+              </div>
+              <div class="model-stat-row">
+                <span class="msr-key">Library</span>
+                <span class="msr-val">scikit-learn 1.6</span>
+              </div>
+              <div class="model-stat-row">
+                <span class="msr-key">Accuracy</span>
+                <span class="msr-val">{{ meta.accuracy }}</span>
+              </div>
+              <div class="model-stat-row">
+                <span class="msr-key">Input Features</span>
+                <span class="msr-val">{{ columns | length }} cols</span>
+              </div>
+              <div class="model-stat-row">
+                <span class="msr-key">Split Ratio</span>
+                <span class="msr-val">80 / 20</span>
+              </div>
+              <div class="model-stat-row">
+                <span class="msr-key">Random State</span>
+                <span class="msr-val">42</span>
+              </div>
+            </div>
+
+            <!-- Feature list card -->
+            <div class="sidebar-card">
+              <p class="sidebar-card-title">
+                <i class="fa-solid fa-table-columns"></i>
+                Feature Columns
+                <span style="margin-left:auto;font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);font-weight:500;">
+                  {{ columns | length }} total
+                </span>
+              </p>
+              <div style="max-height:220px;overflow-y:auto;padding-right:.25rem;">
+                {% for col in columns %}
+                <div style="display:flex;align-items:center;gap:.5rem;padding:.38rem 0;border-bottom:1px solid var(--border-subtle);font-size:.78rem;">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--text-muted);background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:4px;padding:.08rem .38rem;flex-shrink:0;">
+                    {{ "%02d" | format(loop.index) }}
+                  </span>
+                  <span style="color:var(--text-secondary);">{{ col }}</span>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- How to fill tips card -->
+            <div class="sidebar-card">
+              <p class="sidebar-card-title">
+                <i class="fa-solid fa-circle-question"></i>
+                How to Fill
+              </p>
+              <ul class="tips-list">
+                <li>
+                  <i class="fa-solid fa-check-circle"></i>
+                  Enter <strong>numeric values only</strong>. All fields accept decimals.
+                </li>
+                <li>
+                  <i class="fa-solid fa-check-circle"></i>
+                  For <strong>binary fields</strong> (yes/no), use <code>1</code> for Yes and <code>0</code> for No.
+                </li>
+                <li>
+                  <i class="fa-solid fa-check-circle"></i>
+                  Use <strong>standard medical units</strong>: mg/dL for glucose, kg/m² for BMI.
+                </li>
+                <li>
+                  <i class="fa-solid fa-check-circle"></i>
+                  All fields are <strong>required</strong>. The form validates before submission.
+                </li>
+                <li>
+                  <i class="fa-solid fa-check-circle"></i>
+                  Results include <strong>confidence score</strong> and a downloadable PDF report.
+                </li>
+              </ul>
+            </div>
+
+          </div>
+          <!-- /col-lg-4 -->
+
+        </div>
+        <!-- /row -->
+      </div>
+      <!-- /container -->
+    </div>
+    <!-- /disease-main -->
+
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-bottom" style="margin-top:0;border-top:1px solid var(--border-subtle);">
+          <p>
+            &copy; 2024 <strong>DiagnosTenAI</strong> — Built by
+            <a href="https://github.com/Mowshik1210" target="_blank" rel="noopener">Mowshik G</a>
+            &nbsp;·&nbsp; KPRIET · Batch 2026
+          </p>
+          <p class="footer-stack-text">Flask · Scikit-Learn · Random Forest · Bootstrap 5</p>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+  <!-- /page-wrapper -->
+
+
+  <!-- ═══ VALIDATION ERROR TOAST ═══ -->
+  <div class="toast-error" id="toastError" role="alert" aria-live="assertive">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    <span id="toastMessage">Please fill in all required fields.</span>
+  </div>
+
+
+  <!-- ═══ SCRIPTS ═══ -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+  <script>
+    /* ── Page-specific JS for disease.html ── */
+    (function () {
+      "use strict";
+
+      const form       = document.getElementById("predictionForm");
+      const predictBtn = document.getElementById("predictBtn");
+      const resetBtn   = document.getElementById("resetBtn");
+      const inputs     = form ? form.querySelectorAll(".field-input") : [];
+      const filledSpan = document.getElementById("filledCount");
+      const toast      = document.getElementById("toastError");
+      const toastMsg   = document.getElementById("toastMessage");
+
+      /* ── Live fill counter ── */
+      function updateFillCount() {
+        let count = 0;
+        inputs.forEach((inp) => { if (inp.value.trim() !== "") count++; });
+        if (filledSpan) filledSpan.textContent = count;
+      }
+
+      inputs.forEach((inp) => {
+        inp.addEventListener("input", () => {
+          updateFillCount();
+
+          /* Live valid/invalid class */
+          inp.classList.remove("is-valid", "is-invalid");
+          if (inp.value.trim() !== "") {
+            inp.classList.add(isNaN(Number(inp.value)) ? "is-invalid" : "is-valid");
+          }
+        });
+      });
+
+      /* ── Toast helper ── */
+      let toastTimer;
+      function showToast(msg) {
+        if (!toast) return;
+        if (toastMsg) toastMsg.textContent = msg;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 4000);
+      }
+
+      /* ── Form submit — validate + loading state ── */
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          let emptyCount = 0;
+          let hasNonNumeric = false;
+
+          inputs.forEach((inp) => {
+            const val = inp.value.trim();
+            if (val === "") {
+              emptyCount++;
+              inp.classList.add("is-invalid");
+              inp.classList.remove("is-valid");
+            } else if (isNaN(Number(val))) {
+              hasNonNumeric = true;
+              inp.classList.add("is-invalid");
+              inp.classList.remove("is-valid");
+            }
+          });
+
+          if (emptyCount > 0) {
+            e.preventDefault();
+            showToast(`Please fill in all ${emptyCount} remaining field${emptyCount > 1 ? "s" : ""}.`);
+            /* Scroll to first empty field */
+            const firstEmpty = Array.from(inputs).find((i) => i.value.trim() === "");
+            if (firstEmpty) firstEmpty.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+          }
+
+          if (hasNonNumeric) {
+            e.preventDefault();
+            showToast("All values must be numeric. Please check the highlighted fields.");
+            return;
+          }
+
+          /* All good — show loading state */
+          if (predictBtn) predictBtn.classList.add("loading");
+        });
+      }
+
+      /* ── Reset ── */
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          inputs.forEach((inp) => inp.classList.remove("is-valid", "is-invalid"));
+          updateFillCount();
+        });
+      }
+
+      /* ── Keyboard shortcut: Ctrl/Cmd + Enter to submit ── */
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          if (form) form.requestSubmit();
+        }
+      });
+
+    })();
+  </script>
+
+</body>
+</html>

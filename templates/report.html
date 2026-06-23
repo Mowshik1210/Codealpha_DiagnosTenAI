@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<!--
+  DiagnosTenAI — Multi Disease Prediction System
+  File : templates/report.html
+
+  Dual purpose:
+    1. Browser preview — shows a "paper" card on the dark site background
+       with Print and Close buttons (hidden from the PDF).
+    2. WeasyPrint PDF source — rendered server-side by the /download_report
+       route in the final app.py (File 8).
+
+  Flask variables consumed:
+    disease         — str   e.g. "Heart Disease"
+    prediction      — int   0 or 1
+    confidence      — float e.g. 87.5
+    risk_level      — str   e.g. "High"
+    result_label    — str   "Positive" | "Negative"
+    recommendations — list  of str (generated in app.py)
+    report_id       — str   e.g. "DTA-20240615-8F3A"
+    timestamp       — str   e.g. "15 Jun 2024, 14:32 IST"
+
+  WeasyPrint notes:
+    • No JavaScript — WeasyPrint does not execute JS.
+    • All styles in this <style> block — no external CSS files referenced
+      (WeasyPrint may not resolve relative paths correctly).
+    • @page rule controls PDF page size and margins.
+    • page-break-inside: avoid prevents cards splitting across pages.
+    • SVG used for logo mark — fully supported by WeasyPrint.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medical AI Report — {{ disease }} | DiagnosTenAI</title>
+
+  {# ─── Derive display values (identical logic to result.html) ─── #}
+  {% set is_positive = (prediction | int) != 0 %}
+  {% set conf        = confidence | float %}
+
+  {% if is_positive %}
+    {% set result_color  = "#DC2626" %}
+    {% set result_bg     = "#FEF2F2" %}
+    {% set result_border = "#FECACA" %}
+    {% set verdict_text  = disease ~ " Detected" %}
+    {% if conf >= 85 %}{% set risk_color = "#DC2626" %}
+    {% elif conf >= 65 %}{% set risk_color = "#D97706" %}
+    {% else %}{% set risk_color = "#EA580C" %}{% endif %}
+  {% else %}
+    {% set result_color  = "#16A34A" %}
+    {% set result_bg     = "#F0FDF4" %}
+    {% set result_border = "#BBF7D0" %}
+    {% set verdict_text  = "No " ~ disease ~ " Detected" %}
+    {% if conf >= 85 %}{% set risk_color = "#16A34A" %}
+    {% elif conf >= 65 %}{% set risk_color = "#16A34A" %}
+    {% else %}{% set risk_color = "#D97706" %}{% endif %}
+  {% endif %}
+
+  {# Bar width as integer string for inline style #}
+  {% set bar_pct = conf | int %}
+
+  <style>
+    /* ══════════════════════════════════════════════
+       PDF / PRINT PAGE SETTINGS
+       WeasyPrint reads @page — sets A4 size, margins
+    ══════════════════════════════════════════════ */
+    @page {
+      size: A4 portrait;
+      margin: 14mm 16mm 16mm 16mm;
+    }
+
+    /* ══════════════════════════════════════════════
+       BASE — used in both browser preview and PDF
+    ══════════════════════════════════════════════ */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.55;
+      color: #1E293B;
+      background: #0A1525; /* dark site background — hidden in PDF */
+    }
+
+    /* ── Print / WeasyPrint body override ── */
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none !important; }
+      .paper { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+    }
+
+    /* ══════════════════════════════════════════════
+       BROWSER-ONLY CHROME (hidden in PDF)
+    ══════════════════════════════════════════════ */
+    .browser-bar {
+      position: sticky;
+      top: 0; z-index: 100;
+      background: #0A1525;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: .75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .browser-bar-brand {
+      display: flex; align-items: center; gap: .6rem;
+      text-decoration: none;
+      font-weight: 700; font-size: .95rem;
+      color: #E8F4FD;
+    }
+
+    .browser-bar-brand .bi {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, #00D4B8, #818CF8);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: .85rem;
+    }
+
+    .browser-bar-accent { color: #00D4B8; }
+
+    .browser-bar-actions { display: flex; gap: .6rem; align-items: center; }
+
+    .bba-btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .5rem 1.1rem; border-radius: 10px;
+      font-size: .83rem; font-weight: 600; cursor: pointer;
+      font-family: inherit; border: none;
+      transition: background .2s, transform .2s;
+    }
+
+    .bba-primary {
+      background: linear-gradient(135deg, #00D4B8, #00B8A0);
+      color: #fff;
+      box-shadow: 0 3px 12px rgba(0,212,184,.35);
+    }
+    .bba-primary:hover { transform: translateY(-2px); }
+
+    .bba-ghost {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.12);
+      color: #94A3B8;
+    }
+    .bba-ghost:hover { background: rgba(255,255,255,.12); color: #E8F4FD; }
+
+    .report-preview-label {
+      font-size: .72rem;
+      color: rgba(0,212,184,.8);
+      border: 1px solid rgba(0,212,184,.25);
+      border-radius: 2rem;
+      padding: .22rem .75rem;
+      font-family: 'Courier New', monospace;
+      letter-spacing: .04em;
+    }
+
+    /* ── Paper card (browser preview) ── */
+    .paper-wrapper {
+      padding: 2.5rem 1rem 4rem;
+      display: flex; justify-content: center;
+    }
+
+    /* ══════════════════════════════════════════════
+       THE PAPER — this is what WeasyPrint renders
+    ══════════════════════════════════════════════ */
+    .paper {
+      width: 100%; max-width: 794px; /* A4 ~794px at 96dpi */
+      background: #FFFFFF;
+      border-radius: 8px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.55);
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════════════════════
+       REPORT HEADER
+    ══════════════════════════════════════════════ */
+    .rpt-header {
+      background: linear-gradient(135deg, #0B1F3E 0%, #1A3A6E 60%, #0D2D5E 100%);
+      padding: 28px 32px 22px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* Brand side */
+    .rpt-brand { display: flex; align-items: center; gap: 12px; }
+
+    /* SVG logo mark */
+    .rpt-logo-icon {
+      width: 48px; height: 48px; flex-shrink: 0;
+    }
+
+    .rpt-brand-name {
+      font-size: 20pt; font-weight: 800;
+      letter-spacing: -0.03em; line-height: 1;
+      color: #fff;
+    }
+
+    .rpt-brand-name span { color: #00D4B8; }
+
+    .rpt-brand-sub {
+      font-size: 8pt;
+      color: rgba(255,255,255,.55);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* Right: report badge */
+    .rpt-badge-block { text-align: right; }
+
+    .rpt-doc-type {
+      display: inline-block;
+      background: rgba(0,212,184,.18);
+      border: 1px solid rgba(0,212,184,.35);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #00D4B8;
+      margin-bottom: 8px;
+    }
+
+    .rpt-meta-row {
+      font-size: 8pt;
+      color: rgba(255,255,255,.55);
+      margin-top: 3px;
+      line-height: 1.7;
+    }
+
+    .rpt-meta-row strong {
+      color: rgba(255,255,255,.85);
+      font-weight: 600;
+    }
+
+    /* ECG decorative line in header */
+    .rpt-ecg {
+      width: 100%;
+      margin-top: 16px;
+      opacity: .35;
+      display: block;
+    }
+
+    /* ══════════════════════════════════════════════
+       SECTION WRAPPERS
+    ══════════════════════════════════════════════ */
+    .rpt-body { padding: 28px 32px; }
+
+    .rpt-section {
+      margin-bottom: 22px;
+      page-break-inside: avoid;
+    }
+
+    .rpt-section-title {
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: #64748B;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rpt-section-title::before {
+      content: '';
+      width: 4px; height: 14px;
+      border-radius: 4px;
+      background: #00D4B8;
+      display: inline-block;
+    }
+
+    /* ══════════════════════════════════════════════
+       1. DIAGNOSIS SUMMARY
+    ══════════════════════════════════════════════ */
+    .diag-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .diag-cell {
+      background: #F8FAFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .diag-cell-label {
+      font-size: 7.5pt;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #94A3B8;
+      margin-bottom: 5px;
+    }
+
+    .diag-cell-value {
+      font-size: 13pt;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      color: #1E293B;
+      line-height: 1.15;
+    }
+
+    .diag-cell-sub {
+      font-size: 8pt;
+      color: #64748B;
+      margin-top: 3px;
+    }
+
+    /* Verdict cell — full width, coloured */
+    .diag-verdict {
+      grid-column: 1 / -1;
+      background: {{ result_bg }};
+      border: 1.5px solid {{ result_border }};
+      border-radius: 10px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .verdict-circle {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: {{ result_color }};
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-size: 22pt;
+      font-weight: 900;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .verdict-text-block {}
+
+    .verdict-pill {
+      display: inline-block;
+      background: {{ result_color }};
+      color: #fff;
+      border-radius: 20px;
+      padding: 2px 12px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .verdict-main {
+      font-size: 16pt;
+      font-weight: 900;
+      letter-spacing: -.02em;
+      color: {{ result_color }};
+      line-height: 1.1;
+    }
+
+    .verdict-note {
+      font-size: 8.5pt;
+      color: #64748B;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    /* ══════════════════════════════════════════════
+       2. CONFIDENCE & RISK
+    ══════════════════════════════════════════════ */
+    .conf-risk-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 14px;
+    }
+
+    .conf-card {
+      background: #F8FAFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .conf-card-label {
+      font-size: 7.5pt;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #94A3B8;
+      margin-bottom: 8px;
+    }
+
+    .conf-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .conf-number {
+      font-size: 28pt;
+      font-weight: 900;
+      letter-spacing: -.04em;
+      color: {{ result_color }};
+      line-height: 1;
+    }
+
+    .conf-pct-symbol {
+      font-size: 14pt;
+      font-weight: 700;
+      color: {{ result_color }};
+    }
+
+    .conf-desc {
+      font-size: 8pt;
+      color: #64748B;
+    }
+
+    /* Progress bar (print-compatible — plain div, no animation) */
+    .conf-bar-outer {
+      height: 10px;
+      background: #E2E8F0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .conf-bar-inner {
+      height: 100%;
+      width: {{ bar_pct }}%;
+      background: linear-gradient(90deg, {{ result_color }}, color-mix(in srgb, {{ result_color }} 70%, #fff 30%));
+      border-radius: 10px;
+    }
+
+    /* Segment markers on bar */
+    .conf-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 7pt;
+      color: #94A3B8;
+      margin-top: 4px;
+    }
+
+    /* Risk card */
+    .risk-card-pdf {
+      background: {{ result_bg }};
+      border: 1.5px solid {{ result_border }};
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .risk-card-label {
+      font-size: 7pt;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #94A3B8;
+      margin-bottom: 6px;
+    }
+
+    .risk-card-level {
+      font-size: 18pt;
+      font-weight: 900;
+      letter-spacing: -.02em;
+      color: {{ risk_color }};
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .risk-card-sub {
+      font-size: 7.5pt;
+      color: #64748B;
+      line-height: 1.45;
+    }
+
+    /* ══════════════════════════════════════════════
+       3. CLINICAL RECOMMENDATIONS
+    ══════════════════════════════════════════════ */
+    .rec-list { list-style: none; padding: 0; }
+
+    .rec-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #F1F5F9;
+      page-break-inside: avoid;
+    }
+
+    .rec-row:last-child { border-bottom: none; }
+
+    .rec-badge {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      background: {{ result_color }};
+      color: #fff;
+      font-size: 7pt;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .rec-body {
+      font-size: 9pt;
+      color: #334155;
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════════════
+       4. MODEL INFORMATION TABLE
+    ══════════════════════════════════════════════ */
+    .model-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+    }
+
+    .model-table th {
+      text-align: left;
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #64748B;
+      background: #F8FAFF;
+      padding: 8px 12px;
+      border: 1px solid #E2E8F0;
+    }
+
+    .model-table td {
+      padding: 8px 12px;
+      border: 1px solid #E2E8F0;
+      color: #1E293B;
+    }
+
+    .model-table td:last-child {
+      font-weight: 600;
+      color: #0B1F3E;
+    }
+
+    .model-table tr:nth-child(even) td { background: #F8FAFF; }
+
+    /* ══════════════════════════════════════════════
+       5. DISCLAIMER BOX
+    ══════════════════════════════════════════════ */
+    .disclaimer-box {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-left: 4px solid #F59E0B;
+      border-radius: 8px;
+      padding: 12px 16px;
+      page-break-inside: avoid;
+    }
+
+    .disclaimer-box h6 {
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #92400E;
+      margin-bottom: 6px;
+    }
+
+    .disclaimer-box p {
+      font-size: 8pt;
+      color: #78350F;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* ══════════════════════════════════════════════
+       REPORT FOOTER
+    ══════════════════════════════════════════════ */
+    .rpt-footer {
+      background: #0B1F3E;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .rpt-footer-left {
+      font-size: 8pt;
+      color: rgba(255,255,255,.5);
+      line-height: 1.6;
+    }
+
+    .rpt-footer-left strong {
+      color: #00D4B8;
+    }
+
+    .rpt-footer-right {
+      text-align: right;
+      font-size: 7.5pt;
+      color: rgba(255,255,255,.4);
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ── Divider ── */
+    .rpt-divider {
+      height: 1px;
+      background: #E2E8F0;
+      margin: 16px 0;
+    }
+
+    /* ── Two-col info grid ── */
+    .info-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .info-cell {
+      background: #F8FAFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .info-cell-label {
+      font-size: 7pt;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #94A3B8;
+      margin-bottom: 3px;
+    }
+
+    .info-cell-value {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #1E293B;
+    }
+
+    /* ── Watermark (light themed background text) ── */
+    .rpt-watermark {
+      position: fixed;
+      bottom: 40px; right: -30px;
+      font-size: 90pt;
+      font-weight: 900;
+      color: rgba(0,212,184,.04);
+      transform: rotate(-35deg);
+      letter-spacing: -.05em;
+      pointer-events: none;
+      z-index: 0;
+      user-select: none;
+    }
+
+    @media print {
+      .rpt-watermark { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ BROWSER-ONLY TOP BAR (hidden in PDF) ═══ -->
+  <div class="browser-bar no-print">
+    <a href="/" class="browser-bar-brand">
+      <div class="bi">♥</div>
+      DiagnosTen<span class="browser-bar-accent">AI</span>
+    </a>
+
+    <span class="report-preview-label">PDF REPORT PREVIEW</span>
+
+    <div class="browser-bar-actions">
+      <button class="bba-btn bba-primary" onclick="window.print()">
+        ⬇ Download / Print PDF
+      </button>
+      <button class="bba-btn bba-ghost" onclick="history.back()">
+        ← Back to Result
+      </button>
+    </div>
+  </div>
+  <!-- /browser-bar -->
+
+
+  <!-- ═══ PAPER WRAPPER (centers card in browser) ═══ -->
+  <div class="paper-wrapper">
+    <div class="paper">
+
+
+      <!-- ══════════════════════════════════════════
+           REPORT HEADER
+      ══════════════════════════════════════════ -->
+      <div class="rpt-header">
+
+        <!-- Brand / logo -->
+        <div class="rpt-brand">
+          <!-- Inline SVG se logo (WeasyPrint safe) -->
+          <svg class="rpt-logo-icon" viewBox="0 0 48 48"
+               xmlns="http://www.w3.org/2000/svg" fill="none">
+            <rect width="48" height="48" rx="12"
+                  fill="url(#logoGrad)" />
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48"
+                              gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#00D4B8"/>
+                <stop offset="100%" stop-color="#818CF8"/>
+              </linearGradient>
+            </defs>
+            <!-- ECG path inside logo -->
+            <polyline
+              points="6,24 12,24 16,12 20,36 24,24 30,24 33,18 36,30 40,24 44,24"
+              stroke="white" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round"
+              fill="none"/>
+          </svg>
+
+          <div class="rpt-brand-text">
+            <div class="rpt-brand-name">
+              DiagnosTen<span>AI</span>
+            </div>
+            <div class="rpt-brand-sub">Multi-Disease Prediction System</div>
+          </div>
+        </div>
+
+        <!-- Report metadata badge -->
+        <div class="rpt-badge-block">
+          <div class="rpt-doc-type">
+            ⬡ Medical AI Report
+          </div>
+          <div class="rpt-meta-row">
+            <strong>Report ID:</strong> {{ report_id }}<br/>
+            <strong>Generated:</strong> {{ timestamp }}<br/>
+            <strong>Model:</strong> RandomForestClassifier v1.6
+          </div>
+        </div>
+
+        <!-- Decorative ECG line spanning full header width -->
+        <svg class="rpt-ecg" viewBox="0 0 760 28" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <polyline
+            points="
+              0,14 30,14 46,14 54,3  62,25 70,14 90,14
+              120,14 136,14 144,3  152,25 160,14 180,14
+              210,14 226,14 234,3  242,25 250,14 270,14
+              300,14 316,14 324,3  332,25 340,14 360,14
+              390,14 406,14 414,3  422,25 430,14 450,14
+              480,14 496,14 504,3  512,25 520,14 540,14
+              570,14 586,14 594,3  602,25 610,14 630,14
+              660,14 676,14 684,3  692,25 700,14 760,14
+            "
+            stroke="#00D4B8" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+
+      </div>
+      <!-- /rpt-header -->
+
+
+      <!-- ══════════════════════════════════════════
+           REPORT BODY
+      ══════════════════════════════════════════ -->
+      <div class="rpt-body">
+
+
+        <!-- ── Section 1: Diagnosis Summary ── -->
+        <div class="rpt-section">
+          <div class="rpt-section-title">Diagnosis Summary</div>
+
+          <!-- Verdict bar — full width -->
+          <div class="diag-verdict" style="margin-bottom:12px;">
+            <!-- Circle initial: ✓ or ✗ -->
+            <div class="verdict-circle">
+              {% if is_positive %}✗{% else %}✓{% endif %}
+            </div>
+            <div class="verdict-text-block">
+              <div class="verdict-pill">{{ result_label }}</div>
+              <div class="verdict-main">{{ verdict_text }}</div>
+              <div class="verdict-note">
+                {% if is_positive %}
+                  AI model predicts a positive result with
+                  <strong>{{ "%.1f"|format(conf) }}%</strong> confidence.
+                  This is a {{ risk_level | lower }}-risk indicator.
+                  Seek immediate professional medical evaluation.
+                {% else %}
+                  AI model predicts a negative result with
+                  <strong>{{ "%.1f"|format(conf) }}%</strong> confidence.
+                  This is a {{ risk_level | lower }}-risk indicator.
+                  Continue regular health monitoring.
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Info grid -->
+          <div class="info-grid-2">
+            <div class="info-cell">
+              <div class="info-cell-label">Disease Assessed</div>
+              <div class="info-cell-value">{{ disease }}</div>
+            </div>
+            <div class="info-cell">
+              <div class="info-cell-label">Risk Level</div>
+              <div class="info-cell-value" style="color:{{ risk_color }};">
+                {{ risk_level }} Risk
+              </div>
+            </div>
+            <div class="info-cell">
+              <div class="info-cell-label">Report ID</div>
+              <div class="info-cell-value" style="font-family:'Courier New',monospace;font-size:9pt;">
+                {{ report_id }}
+              </div>
+            </div>
+            <div class="info-cell">
+              <div class="info-cell-label">Generated On</div>
+              <div class="info-cell-value" style="font-size:9pt;">{{ timestamp }}</div>
+            </div>
+          </div>
+        </div>
+        <!-- /section 1 -->
+
+
+        <!-- ── Section 2: Confidence Score & Risk ── -->
+        <div class="rpt-section">
+          <div class="rpt-section-title">Confidence Score &amp; Risk Assessment</div>
+
+          <div class="conf-risk-grid">
+
+            <!-- Confidence card -->
+            <div class="conf-card">
+              <div class="conf-card-label">Model Confidence</div>
+              <div class="conf-value-row">
+                <span class="conf-number">{{ "%.1f"|format(conf) }}</span>
+                <span class="conf-pct-symbol">%</span>
+              </div>
+              <div class="conf-desc">
+                The RandomForest classifier assigned a
+                <strong>{{ "%.2f"|format(conf) }}%</strong> probability
+                to this prediction across 200 decision trees trained on
+                an 80/20 train-test split.
+              </div>
+              <div class="conf-bar-outer">
+                <div class="conf-bar-inner"></div>
+              </div>
+              <div class="conf-bar-labels">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <!-- Risk card -->
+            <div class="risk-card-pdf">
+              <div class="risk-card-label">Risk Level</div>
+              <div class="risk-card-level">{{ risk_level }}</div>
+              <div class="risk-card-sub">
+                Based on prediction outcome and confidence
+                threshold analysis.
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <!-- /section 2 -->
+
+
+        <!-- ── Section 3: Clinical Recommendations ── -->
+        <div class="rpt-section">
+          <div class="rpt-section-title">
+            Clinical Recommendations
+            <span style="font-size:7pt;color:#94A3B8;font-weight:400;margin-left:6px;text-transform:none;letter-spacing:0;">
+              ({{ recommendations | length }} actions for a {{ result_label | lower }} result)
+            </span>
+          </div>
+
+          <ul class="rec-list">
+            {% for rec in recommendations %}
+            <li class="rec-row">
+              <span class="rec-badge">{{ "%02d"|format(loop.index) }}</span>
+              <span class="rec-body">{{ rec }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <!-- /section 3 -->
+
+
+        <!-- ── Section 4: Model Information ── -->
+        <div class="rpt-section">
+          <div class="rpt-section-title">Model &amp; Technical Information</div>
+
+          <table class="model-table">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Algorithm</td>
+                <td>RandomForestClassifier</td>
+                <td>Ensemble of decision trees</td>
+              </tr>
+              <tr>
+                <td>Library</td>
+                <td>scikit-learn 1.6.1</td>
+                <td>Python machine learning library</td>
+              </tr>
+              <tr>
+                <td>Estimators</td>
+                <td>200 trees</td>
+                <td>n_estimators=200</td>
+              </tr>
+              <tr>
+                <td>Train / Test Split</td>
+                <td>80% / 20%</td>
+                <td>random_state=42</td>
+              </tr>
+              <tr>
+                <td>Serialisation</td>
+                <td>Joblib 1.4.2</td>
+                <td>.pkl model file</td>
+              </tr>
+              <tr>
+                <td>Backend</td>
+                <td>Flask 3.1.0</td>
+                <td>Python web framework</td>
+              </tr>
+              <tr>
+                <td>Disease Assessed</td>
+                <td>{{ disease }}</td>
+                <td>1 of 10 supported conditions</td>
+              </tr>
+              <tr>
+                <td>Raw Prediction</td>
+                <td>{{ prediction }}</td>
+                <td>LabelEncoder output (0 = negative, 1 = positive)</td>
+              </tr>
+              <tr>
+                <td>Confidence Score</td>
+                <td>{{ "%.4f"|format(conf / 100) }}</td>
+                <td>max(predict_proba) — probability of predicted class</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- /section 4 -->
+
+
+        <!-- ── Section 5: Disclaimer ── -->
+        <div class="rpt-section">
+          <div class="disclaimer-box">
+            <h6>⚠ Important Medical Disclaimer</h6>
+            <p>
+              This report has been generated by <strong>DiagnosTenAI</strong>, an
+              AI-powered disease prediction system developed for
+              <strong>educational purposes only</strong>.
+              It is <strong>NOT</strong> a substitute for professional medical advice,
+              clinical diagnosis, or treatment recommendations from a qualified
+              healthcare provider. The AI model may produce false positives or false
+              negatives. No clinical or treatment decision should be made solely on
+              the basis of this report. Always consult a licensed physician or specialist
+              for accurate diagnosis and appropriate care. In case of a medical emergency,
+              call your local emergency services immediately.
+            </p>
+          </div>
+        </div>
+        <!-- /section 5 -->
+
+
+      </div>
+      <!-- /rpt-body -->
+
+
+      <!-- ══════════════════════════════════════════
+           REPORT FOOTER
+      ══════════════════════════════════════════ -->
+      <div class="rpt-footer">
+        <div class="rpt-footer-left">
+          <strong>DiagnosTenAI</strong> — Multi-Disease Prediction System<br/>
+          Built by Mowshik G ·
+          <span style="color:rgba(255,255,255,.4);">github.com/Mowshik1210</span><br/>
+          <span style="color:rgba(255,255,255,.35);font-size:7pt;">
+            Built with Flask · Batch 2026 · KPRIET
+          </span>
+        </div>
+        <div class="rpt-footer-right">
+          Report ID: {{ report_id }}<br/>
+          {{ timestamp }}<br/>
+          <span style="color:rgba(255,255,255,.25);">
+            For educational use only
+          </span>
+        </div>
+      </div>
+      <!-- /rpt-footer -->
+
+
+    </div><!-- /paper -->
+  </div><!-- /paper-wrapper -->
+
+  <!-- Subtle watermark on browser preview -->
+  <div class="rpt-watermark no-print" aria-hidden="true">AI</div>
+
+</body>
+</html>
