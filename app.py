@@ -40,6 +40,9 @@ except ImportError:
 print("========== DIAGNOSTENAI STARTING ==========")
 # ─────────────────────────────────────────────────────────────
 app = Flask(__name__)
+@app.route("/health")
+def health():
+    return "OK", 200
 print("Flask app created successfully")
 
 # ═══════════════════════════════════════════════════════════════
