@@ -37,10 +37,10 @@ except ImportError:
         "  Run:  pip install xhtml2pdf\n"
         "  PDF download will fall back to browser print view.\n"
     )
-
+print("========== DIAGNOSTENAI STARTING ==========")
 # ─────────────────────────────────────────────────────────────
 app = Flask(__name__)
-
+print("Flask app created successfully")
 
 # ═══════════════════════════════════════════════════════════════
 # DISEASE REGISTRY
