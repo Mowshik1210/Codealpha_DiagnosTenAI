@@ -18,3 +18,4 @@ seaborn==0.13.2
 # ── PDF report generation (pure Python — no system deps) ─────
 # Works on Windows without GTK / Pango / Cairo.
 xhtml2pdf==0.2.17
+gunicorn==23.0.0
