@@ -1,34 +1,54 @@
-# 🩺 Disease Prediction Web App
+<div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
-![Flask](https://img.shields.io/badge/Flask-Framework-black?logo=flask)
-![Status](https://img.shields.io/badge/Status-Completed-success)
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=10,25,47&height=220&section=header&text=🩺%20Disease%20Prediction%20AI&fontSize=40&fontColor=fff&animation=fadeIn&fontAlignY=38&desc=Intelligent%20Health%20Condition%20Classification%20via%20Flask&descAlignY=60&descAlign=50" width="100%"/>
 
-A responsive, user-friendly web application built with **Flask** that leverages machine learning to predict potential diseases based on user-inputted symptoms. 
+[![Python](https://img.shields.io/badge/Python-3.10+-3776ab?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
+[![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.3+-f7931e?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
+[![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 
-This project was developed as **Task 4** for the **CodeAlpha** internship program.
+<br/>
+
+> **🏫 Project · CodeAlpha Internship (Task 4)**
+> 
+> ** 🌐 LIVE DEMO: [Insert Your Deployment Link Here] **
+> A responsive, full-stack machine learning web application that predicts potential health conditions 
+> based on diagnostic symptoms and physical indicators—powered by Python, Flask, and Scikit-Learn.
+
+<br/>
+
+[![⭐ Star this repo](https://img.shields.io/github/stars/YourUsername/ProjectRepo?style=social)](https://github.com/YourUsername/ProjectRepo)
+&nbsp;&nbsp;
+[![🍴 Fork](https://img.shields.io/github/forks/YourUsername/ProjectRepo?style=social)](https://github.com/YourUsername/ProjectRepo)
+
+</div>
+
+---
+
+## 📸 App Preview
+
+<div align="center">
+
+| Desktop Interface | Diagnostic Analysis | Responsive Mobile View |
+|:-----------:|:-----------------:|:-------------:|
+| *![](https://via.placeholder.com/400x250?text=Desktop+Dashboard)* | *![](https://via.placeholder.com/400x250?text=Prediction+Result)* | *![](https://via.placeholder.com/250x430?text=Mobile+UI)* |
+
+> 💡 **Tip:** Replace these placeholders with actual screenshots from your running web app!
+
+</div>
+
+---
 
 ## ✨ Features
 
-* **🤖 Predictive Analytics:** Fast and accurate disease prediction based on selected symptoms.
-* **📱 Fully Responsive Design:** A seamless UI that works perfectly on desktops, tablets, and mobile devices.
-* **🎨 Custom UI/UX:** Features a sleek, fixed navigation bar and dynamically adjusting layouts for different screen sizes.
-* **⚡ Lightweight & Fast:** Powered by a streamlined Python Flask backend.
+| Feature | Description |
+|---------|-------------|
+| 🎨 **Responsive UI** | Tailored CSS overrides (`display: none !important`) for seamless navigation across desktops, tablets, and phones. |
+| 🛡️ **Fixed Layout Fixes** | Dynamic top padding management (`padding-top: 68px`) eliminating viewport clipping and overlapping navbar bugs. |
+| ⚡ **Real-time Diagnostics** | Flask server processing engine routing structured client data into the machine learning core instantly. |
+| 🧬 **ML Classification** | Smart feature normalisation and modeling built using industry-standard Scikit-Learn tools. |
+| 🎛️ **Streamlined Forms** | Clean, uncluttered UI fields targeted at optimal mobile accessibility on screens narrower than 768px. |
 
-## 🛠️ Tech Stack
+---
 
-* **Backend:** Python, Flask
-* **Frontend:** HTML5, CSS3 (Custom Media Queries for Mobile Responsiveness)
-* **Machine Learning:** Scikit-Learn, Pandas, NumPy (Update these based on your actual ML stack)
-
-## 🚀 Getting Started
-
-### Prerequisites
-Make sure you have Python installed on your machine.
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/yourusername/disease-prediction-app.git](https://github.com/yourusername/disease-prediction-app.git)
-   cd disease-prediction-app
+## 🧠 Model & Framework Architecture
