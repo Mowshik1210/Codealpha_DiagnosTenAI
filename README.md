@@ -56,7 +56,7 @@
 
 ## ✨ Live Demo
 
-🌐 **[Launch DiagnosTenAI →](your-railway-deployment-link-here)**
+🌐 **[Launch DiagnosTenAI →](https://diagnostenai.up.railway.app)**
 
 </div>
 
@@ -372,19 +372,21 @@ included in all copies or substantial portions of the Software.
 
 <br/>
 👨‍💻 Developer
-<div align="center"><img src="https://avatars.githubusercontent.com/yourusername" width="120px" style="border-radius: 50%"/>
+<div align="center">
+        
 Mowshik G
-AI & ML Developer | Full Stack Engineer | Healthcare Tech Enthusiast
+AI & ML Developer | Machine Learning Engineer | Healthcare Tech Enthusiast
 
-GitHub
-LinkedIn
-Email
+📧 Email: [[dharshanmowshik@gmail.com](mailto:dharshanmowshik@gmail.com)]
+📱 Phone: +91 7695970676 
+🌐 GitHub: github.com/Mowshik1210"
+🧑‍🏫 Linkidin: www.linkedin.com/in/mowshik-g
 
-Built with ❤️ during CodeAlpha Internship – Task 4
+Built with ❤️ 
 
 </div>
 <div align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=100&section=footer&animation=twinkling" width="100%"/>
 ⭐ If DiagnosTenAI helped you, please give it a star!
-DiagnosTenAI | CodeAlpha Internship Task 4 | Built by Mowshik G
+DiagnosTenAI | Built by Mowshik G
 
 </div> ```
