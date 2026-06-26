@@ -571,3 +571,62 @@ document.addEventListener("DOMContentLoaded", () => {
     "— Multi Disease Prediction System ready."
   );
 });
+// ==========================================
+// DYNAMIC DATALIST OPTIONS FOR DISEASE FORMS
+// ==========================================
+document.addEventListener("DOMContentLoaded", function() {
+    // Dictionary mapping model column names to dropdown options
+    // The 'val' is what goes to the ML model, the 'text' is what the user reads.
+    const fieldOptions = {
+        'sex': [{val: '1', text: 'Male'}, {val: '0', text: 'Female'}],
+        'gender': [{val: '1', text: 'Male'}, {val: '0', text: 'Female'}],
+        'cp': [{val: '0', text: 'Typical Angina'}, {val: '1', text: 'Atypical Angina'}, {val: '2', text: 'Non-anginal Pain'}, {val: '3', text: 'Asymptomatic'}],
+        'fbs': [{val: '1', text: 'True (> 120 mg/dl)'}, {val: '0', text: 'False (< 120 mg/dl)'}],
+        'restecg': [{val: '0', text: 'Normal'}, {val: '1', text: 'ST-T Wave Abnormality'}, {val: '2', text: 'Left Ventricular Hypertrophy'}],
+        'exang': [{val: '1', text: 'Yes'}, {val: '0', text: 'No'}],
+        'slope': [{val: '0', text: 'Upsloping'}, {val: '1', text: 'Flat'}, {val: '2', text: 'Downsloping'}],
+        'thal': [{val: '0', text: 'Normal'}, {val: '1', text: 'Fixed Defect'}, {val: '2', text: 'Reversable Defect'}, {val: '3', text: 'Unknown'}],
+        'hypertension': [{val: '1', text: 'Yes'}, {val: '0', text: 'No'}],
+        'heart_disease': [{val: '1', text: 'Yes'}, {val: '0', text: 'No'}],
+        'ever_married': [{val: '1', text: 'Yes'}, {val: '0', text: 'No'}],
+        'smoking_status': [{val: '0', text: 'Never Smoked'}, {val: '1', text: 'Formerly Smoked'}, {val: '2', text: 'Smokes'}],
+        'work_type': [{val: '0', text: 'Private'}, {val: '1', text: 'Self-employed'}, {val: '2', text: 'Govt_job'}, {val: '3', text: 'Children'}],
+        'residence_type': [{val: '1', text: 'Urban'}, {val: '0', text: 'Rural'}]
+    };
+
+    // Find all text and number inputs inside forms
+    const formInputs = document.querySelectorAll("form input[type='text'], form input[type='number']");
+
+    formInputs.forEach(input => {
+        // Get the field name and format it to lowercase for matching
+        if (!input.name) return;
+        let fieldName = input.name.toLowerCase().trim();
+
+        // If the field name exists in our dictionary, attach a datalist
+        if (fieldOptions[fieldName]) {
+            let listId = 'datalist-' + fieldName;
+            
+            // Create the datalist element
+            let datalist = document.createElement('datalist');
+            datalist.id = listId;
+
+            // Add the options to the datalist
+            fieldOptions[fieldName].forEach(opt => {
+                let option = document.createElement('option');
+                option.value = opt.val;
+                option.label = opt.text; 
+                datalist.appendChild(option);
+            });
+
+            // Append to DOM and link it to the input field
+            input.parentNode.appendChild(datalist);
+            input.setAttribute('list', listId);
+            input.setAttribute('autocomplete', 'off'); // Prevents browser history from hiding our custom options
+            
+            // Add a visual cue to the placeholder
+            if (!input.placeholder.includes("Select")) {
+                input.placeholder = "Click to view options...";
+            }
+        }
+    });
+});
