@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- Header Banner -->
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=200&section=header&text=DiagnosTenAI&fontSize=70&fontColor=fff&animation=twinkling&fontAlignY=35&desc=AI-Powered%20Multi-Disease%20Prediction%20System&descAlignY=60&descSize=20" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:16A34A,100:22C55E&height=200&section=header&text=DiagnosTenAI&fontSize=70&fontColor=fff&animation=twinkling&fontAlignY=35&desc=AI-Powered%20Multi-Disease%20Prediction%20System&descAlignY=60&descSize=20" width="100%"/>
 
 <br/>
 
@@ -36,6 +36,8 @@
 ---
 
 <div align="center">
+```
+
 
 ## 🏥 What is DiagnosTenAI?
 
@@ -372,7 +374,6 @@ included in all copies or substantial portions of the Software.
 
 <br/>
 👨‍💻 Developer
-<div align="center">
         
 Mowshik G
 AI & ML Developer | Machine Learning Engineer | Healthcare Tech Enthusiast
@@ -383,10 +384,15 @@ AI & ML Developer | Machine Learning Engineer | Healthcare Tech Enthusiast
 🧑‍🏫 Linkidin: www.linkedin.com/in/mowshik-g
 
 Built with ❤️ 
-
 </div>
-<div align="center"><img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=100&section=footer&animation=twinkling" width="100%"/>
+
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:16A34A,100:22C55E&height=100&section=footer&animation=twinkling" width="100%"/>
+
 ⭐ If DiagnosTenAI helped you, please give it a star!
+
 DiagnosTenAI | Built by Mowshik G
 
-</div> ```
+</div>
+
